@@ -17,6 +17,12 @@ import {
   setActiveRoomId,
 } from '../utils/activeRoom'
 
+interface ChallengeSettings {
+  questionsCount?: number
+  timePerQuestionSec?: number
+  maxPlayers?: number
+}
+
 interface RoomState {
   // State
   room: Room | null
@@ -26,7 +32,13 @@ interface RoomState {
   error: string | null
 
   // Actions
-  createRoom: (grade: number, term: number, deviceId: string, nickname: string) => Promise<void>
+  createRoom: (
+    grade: number,
+    term: number,
+    deviceId: string,
+    nickname: string,
+    settings?: ChallengeSettings
+  ) => Promise<void>
   joinRoom: (code: string, deviceId: string, nickname: string) => Promise<void>
   loadRoom: (roomId: string, deviceId: string) => Promise<void>
   setReady: (isReady: boolean) => Promise<void>
@@ -74,10 +86,16 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   },
 
   // Create a new room
-  createRoom: async (grade, term, deviceId, nickname) => {
+  createRoom: async (grade, term, deviceId, nickname, settings) => {
     set({ isLoading: true, error: null })
     try {
-      const { room, player } = await createRoomApi({ grade, term, deviceId, nickname })
+      const { room, player } = await createRoomApi({
+        grade,
+        term,
+        deviceId,
+        nickname,
+        ...settings,
+      })
       set({
         room,
         players: [player],

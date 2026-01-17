@@ -5,9 +5,12 @@ import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTIONS_COUNT, DEFAULT_TIME_PER_QUESTION
 
 interface CreateRoomParams {
   grade: number
-  term: number
+  term: number  // 0 = all terms
   deviceId: string
   nickname: string
+  questionsCount?: number
+  timePerQuestionSec?: number
+  maxPlayers?: number
 }
 
 interface CreateRoomResult {
@@ -17,21 +20,30 @@ interface CreateRoomResult {
 
 /**
  * Fetches random question IDs for a given grade and term
+ * @param term - 0 means all terms
  */
 async function fetchRandomQuestionIds(
   grade: number,
   term: number,
   count: number
 ): Promise<string[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('questions')
     .select('id')
     .eq('grade', grade)
-    .eq('term', term)
+
+  // Only filter by term if a specific term is selected (term > 0)
+  if (term > 0) {
+    query = query.eq('term', term)
+  }
+
+  const { data, error } = await query
 
   if (error) throw new Error(`Failed to fetch questions: ${error.message}`)
+
+  const termLabel = term > 0 ? `Term ${term}` : 'All Terms'
   if (!data || data.length < count) {
-    throw new Error(`Not enough questions available for Grade ${grade}, Term ${term}. Found ${data?.length || 0}, need ${count}.`)
+    throw new Error(`Not enough questions available for Grade ${grade}, ${termLabel}. Found ${data?.length || 0}, need ${count}.`)
   }
 
   // Shuffle and pick random questions
@@ -43,10 +55,18 @@ async function fetchRandomQuestionIds(
  * Creates a new room with random questions and adds the creator as the first player
  */
 export async function createRoom(params: CreateRoomParams): Promise<CreateRoomResult> {
-  const { grade, term, deviceId, nickname } = params
+  const {
+    grade,
+    term,
+    deviceId,
+    nickname,
+    questionsCount = DEFAULT_QUESTIONS_COUNT,
+    timePerQuestionSec = DEFAULT_TIME_PER_QUESTION_SEC,
+    maxPlayers = DEFAULT_MAX_PLAYERS,
+  } = params
 
   // Fetch random questions for this room
-  const questionIds = await fetchRandomQuestionIds(grade, term, DEFAULT_QUESTIONS_COUNT)
+  const questionIds = await fetchRandomQuestionIds(grade, term, questionsCount)
 
   // Generate a unique room code (retry if collision)
   let code: string
@@ -76,9 +96,9 @@ export async function createRoom(params: CreateRoomParams): Promise<CreateRoomRe
       code: code!,
       grade,
       term,
-      max_players: DEFAULT_MAX_PLAYERS,
-      questions_count: DEFAULT_QUESTIONS_COUNT,
-      time_per_question_sec: DEFAULT_TIME_PER_QUESTION_SEC,
+      max_players: maxPlayers,
+      questions_count: questionsCount,
+      time_per_question_sec: timePerQuestionSec,
       question_ids: questionIds,
       status: 'waiting',
     })

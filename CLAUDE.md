@@ -119,6 +119,10 @@ VITE_SUPABASE_ANON_KEY=<from supabase start output>
 - `plan/` - Technical specs, implementation plans, architecture
   - `battle-board-technical-spec.md` - Tech stack, database schema, implementation phases
 
+## Planning
+
+When using Claude Code plan mode, store plan files in `plan/` directory within this project, NOT in the user's home directory (`~/.claude/plans/`). This keeps plans version-controlled with the codebase.
+
 ## Claude Code Settings
 
 Pre-approved permissions in `.claude/settings.json` allow autonomous implementation:
