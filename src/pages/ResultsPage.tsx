@@ -11,6 +11,11 @@ import { fetchRoomResults } from "../services/gameService";
 import { getActiveRoomCode, getActiveRoomId } from "../utils/activeRoom";
 import { useNow } from "../hooks/useNow";
 import { isPlayerOnline } from "../utils/presence";
+import {
+  PRESENCE_POLL_INTERVAL_MS,
+  ROOM_STATUS,
+  ROUTES,
+} from "../utils/constants";
 
 function formatTimeMs(totalTimeMs: number): string {
   const seconds = Math.round(totalTimeMs / 1000);
@@ -20,7 +25,7 @@ function formatTimeMs(totalTimeMs: number): string {
 export default function ResultsPage() {
   const navigate = useNavigate();
   const deviceId = useDeviceId();
-  const nowMs = useNow(5000);
+  const nowMs = useNow(PRESENCE_POLL_INTERVAL_MS);
   const hasAttemptedRestoreRef = useRef(false);
 
   const {
@@ -29,6 +34,7 @@ export default function ResultsPage() {
     isRoomLoading,
     loadRoom,
     joinRoom,
+    startReplay,
     resetRoomStore,
   } = useRoomStore(
     useShallow((state) => ({
@@ -37,6 +43,7 @@ export default function ResultsPage() {
       isRoomLoading: state.isLoading,
       loadRoom: state.loadRoom,
       joinRoom: state.joinRoom,
+      startReplay: state.startReplay,
       resetRoomStore: state.reset,
     })),
   );
@@ -51,6 +58,13 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (room?.status === ROOM_STATUS.WAITING) {
+      resetGameStore();
+      navigate(ROUTES.waiting);
+    }
+  }, [room?.status, navigate, resetGameStore]);
+
+  useEffect(() => {
     if (!room || !currentPlayer) {
       if (isRoomLoading) return;
       const activeRoomId = getActiveRoomId();
@@ -59,16 +73,16 @@ export default function ResultsPage() {
         loadRoom(activeRoomId, deviceId).catch(() => {
           const activeRoomCode = getActiveRoomCode();
           if (!activeRoomCode) {
-            navigate("/");
+            navigate(ROUTES.home);
             return;
           }
           joinRoom(activeRoomCode, deviceId, "Rejoin").catch(() => {
-            navigate("/");
+            navigate(ROUTES.home);
           });
         });
         return;
       }
-      navigate("/");
+      navigate(ROUTES.home);
       return;
     }
 
@@ -93,7 +107,7 @@ export default function ResultsPage() {
   const handleExit = () => {
     resetGameStore();
     resetRoomStore();
-    navigate("/");
+    navigate(ROUTES.home);
   };
 
   if (!room || !currentPlayer) {
@@ -163,8 +177,26 @@ export default function ResultsPage() {
           })}
         </div>
 
-        <div className="pt-2">
-          <Button fullWidth size="lg" onClick={handleExit}>
+        <div className="pt-2 space-y-3">
+          {currentPlayer.is_owner ? (
+            <Button
+              fullWidth
+              size="lg"
+              variant="primary"
+              onClick={() => startReplay()}
+              className="bg-green-500 hover:bg-green-600 text-white"
+            >
+              Play Again
+            </Button>
+          ) : (
+            <div className="bg-white/10 rounded-xl p-4 text-center">
+              <p className="text-white/80 animate-pulse">
+                Waiting for host to start another round...
+              </p>
+            </div>
+          )}
+
+          <Button fullWidth size="lg" variant="secondary" onClick={handleExit}>
             Back to Home
           </Button>
         </div>

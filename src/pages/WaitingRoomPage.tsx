@@ -10,14 +10,21 @@ import { useDeviceId } from "../hooks/useDeviceId";
 import { useNow } from "../hooks/useNow";
 import { updatePlayerHeartbeat } from "../services/roomService";
 import { getActiveRoomCode, getActiveRoomId } from "../utils/activeRoom";
-import { GRADE_LABEL_BY_VALUE, TERM_LABEL_BY_VALUE } from "../utils/constants";
+import {
+  GRADE_LABEL_BY_VALUE,
+  HEARTBEAT_INTERVAL_MS,
+  PRESENCE_POLL_INTERVAL_MS,
+  ROOM_STATUS,
+  ROUTES,
+  TERM_LABEL_BY_VALUE,
+} from "../utils/constants";
 import { isPlayerOnline } from "../utils/presence";
 
 export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const deviceId = useDeviceId();
   const hasAttemptedRestoreRef = useRef(false);
-  const nowMs = useNow(5000);
+  const nowMs = useNow(PRESENCE_POLL_INTERVAL_MS);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const previousOnlineByPlayerIdRef = useRef<Record<string, boolean>>({});
   const statusMessageTimeoutRef = useRef<number | null>(null);
@@ -55,29 +62,29 @@ export default function WaitingRoomPage() {
         loadRoom(activeRoomId, deviceId).catch(() => {
           const activeRoomCode = getActiveRoomCode();
           if (!activeRoomCode) {
-            navigate("/");
+            navigate(ROUTES.home);
             return;
           }
           joinRoom(activeRoomCode, deviceId, "Rejoin").catch(() => {
-            navigate("/");
+            navigate(ROUTES.home);
           });
         });
         return;
       }
-      navigate("/");
+      navigate(ROUTES.home);
     }
   }, [room, isLoading, loadRoom, joinRoom, deviceId, navigate]);
 
   // Navigate to challenge when game starts
   useEffect(() => {
-    if (room?.status === "playing") {
-      navigate("/challenge");
+    if (room?.status === ROOM_STATUS.PLAYING) {
+      navigate(ROUTES.challenge);
     }
   }, [room?.status, navigate]);
 
   useEffect(() => {
-    if (room?.status === "finished") {
-      navigate("/results");
+    if (room?.status === ROOM_STATUS.FINISHED) {
+      navigate(ROUTES.results);
     }
   }, [room?.status, navigate]);
 
@@ -87,7 +94,7 @@ export default function WaitingRoomPage() {
     updatePlayerHeartbeat(currentPlayerId).catch(() => {});
     const id = window.setInterval(() => {
       updatePlayerHeartbeat(currentPlayerId).catch(() => {});
-    }, 15000);
+    }, HEARTBEAT_INTERVAL_MS);
 
     return () => window.clearInterval(id);
   }, [currentPlayerId]);
@@ -121,6 +128,7 @@ export default function WaitingRoomPage() {
   const allPlayersReady =
     players.length >= 2 && players.every((p) => p.is_ready);
   const isRoomFull = room && players.length >= room.max_players;
+  const canStartGame = allPlayersReady && currentPlayer?.is_owner;
   const offlineOtherPlayers =
     currentPlayerId === null
       ? []
@@ -134,13 +142,13 @@ export default function WaitingRoomPage() {
   };
 
   const handleStartGame = async () => {
-    if (!allPlayersReady) return;
+    if (!canStartGame) return;
     await startGame();
   };
 
   const handleLeave = async () => {
     await leaveRoom();
-    navigate("/");
+    navigate(ROUTES.home);
   };
 
   if (!room || !currentPlayer) {
@@ -213,19 +221,24 @@ export default function WaitingRoomPage() {
         )}
 
         <div className="space-y-3 pt-2">
-          {allPlayersReady ? (
-            <Button fullWidth size="lg" onClick={handleStartGame}>
-              Start Challenge!
-            </Button>
-          ) : (
+          <Button
+            fullWidth
+            size="lg"
+            variant={currentPlayer.is_ready ? "secondary" : "primary"}
+            onClick={handleToggleReady}
+            disabled={!isRoomFull}
+          >
+            {currentPlayer.is_ready ? "Cancel Ready" : "I'm Ready!"}
+          </Button>
+
+          {allPlayersReady && (
             <Button
               fullWidth
               size="lg"
-              variant={currentPlayer.is_ready ? "secondary" : "primary"}
-              onClick={handleToggleReady}
-              disabled={!isRoomFull}
+              onClick={handleStartGame}
+              disabled={!canStartGame}
             >
-              {currentPlayer.is_ready ? "Cancel Ready" : "I'm Ready!"}
+              {canStartGame ? "Start Challenge!" : "Waiting for host to start…"}
             </Button>
           )}
 

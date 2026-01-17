@@ -8,6 +8,7 @@ import { useRoomStore } from "../stores/roomStore";
 import { useDeviceId } from "../hooks/useDeviceId";
 import { getActiveRoomCode, setActiveRoomCode } from "../utils/activeRoom";
 import { getLastNickname, setLastNickname } from "../utils/joinFormPrefs";
+import { NICKNAME_MAX_LENGTH, ROOM_CODE_LENGTH, ROUTES } from "../utils/constants";
 
 export default function JoinRoomPage() {
   const navigate = useNavigate();
@@ -28,18 +29,18 @@ export default function JoinRoomPage() {
     const cachedCode = getActiveRoomCode();
     if (cachedCode) {
       const cleaned = cachedCode.toUpperCase().replace(/[^A-Z0-9]/g, "");
-      setCode(cleaned.slice(0, 6));
+      setCode(cleaned.slice(0, ROOM_CODE_LENGTH));
     }
     const cachedNickname = getLastNickname();
     if (cachedNickname) {
-      setNickname(cachedNickname.slice(0, 20));
+      setNickname(cachedNickname.slice(0, NICKNAME_MAX_LENGTH));
     }
   }, []);
 
   const handleCodeChange = (value: string) => {
     // Only allow alphanumeric, convert to uppercase
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const next = cleaned.slice(0, 6);
+    const next = cleaned.slice(0, ROOM_CODE_LENGTH);
     setCode(next);
   };
 
@@ -51,16 +52,18 @@ export default function JoinRoomPage() {
       setLocalError("Please enter a room code");
       return;
     }
-    if (trimmedCode.length !== 6) {
-      setLocalError("Room code must be 6 characters");
+    if (trimmedCode.length !== ROOM_CODE_LENGTH) {
+      setLocalError(`Room code must be ${ROOM_CODE_LENGTH} characters`);
       return;
     }
     if (!trimmedNickname) {
       setLocalError("Please enter a nickname");
       return;
     }
-    if (trimmedNickname.length > 20) {
-      setLocalError("Nickname must be 20 characters or less");
+    if (trimmedNickname.length > NICKNAME_MAX_LENGTH) {
+      setLocalError(
+        `Nickname must be ${NICKNAME_MAX_LENGTH} characters or less`,
+      );
       return;
     }
 
@@ -69,7 +72,7 @@ export default function JoinRoomPage() {
       setActiveRoomCode(trimmedCode);
       setLastNickname(trimmedNickname);
       await joinRoom(trimmedCode, deviceId, trimmedNickname);
-      navigate("/waiting");
+      navigate(ROUTES.waiting);
     } catch {
       // Error is handled by store
     }
@@ -94,7 +97,7 @@ export default function JoinRoomPage() {
             value={code}
             onChange={(e) => handleCodeChange(e.target.value)}
             placeholder="XXXXXX"
-            maxLength={6}
+            maxLength={ROOM_CODE_LENGTH}
             autoFocus
             className="w-full px-4 py-4 bg-white/20 border border-white/30 rounded-xl text-white text-center text-2xl font-mono tracking-[0.3em] placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50 transition-all uppercase"
           />
@@ -108,7 +111,7 @@ export default function JoinRoomPage() {
             setNickname(e.target.value);
             setLastNickname(e.target.value);
           }}
-          maxLength={20}
+          maxLength={NICKNAME_MAX_LENGTH}
         />
 
         {(localError || error) && (
@@ -122,12 +125,12 @@ export default function JoinRoomPage() {
             fullWidth
             size="lg"
             onClick={handleJoin}
-            disabled={isLoading || code.length !== 6}
+            disabled={isLoading || code.length !== ROOM_CODE_LENGTH}
           >
             {isLoading ? "Joining..." : "Join Room"}
           </Button>
 
-          <Button fullWidth variant="outline" onClick={() => navigate("/")}>
+          <Button fullWidth variant="outline" onClick={() => navigate(ROUTES.home)}>
             Back
           </Button>
         </div>

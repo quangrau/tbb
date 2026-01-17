@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "../config/supabase";
 import type { Room, Player } from "../types";
+import { REALTIME_CHANNEL } from "../utils/constants";
 
 type RoomChangeHandler = (room: Room) => void;
 type PlayersChangeHandler = (players: Player[]) => void;
@@ -34,7 +35,7 @@ export function subscribeToRoom(
   };
 
   const channel = supabase
-    .channel(`room:${roomId}`)
+    .channel(REALTIME_CHANNEL.roomState(roomId))
     .on(
       "postgres_changes",
       {
@@ -115,7 +116,7 @@ export function subscribeToGameProgress(
   };
 
   const channel = supabase
-    .channel(`game:${roomId}`)
+    .channel(REALTIME_CHANNEL.roomProgress(roomId))
     .on(
       "postgres_changes",
       {

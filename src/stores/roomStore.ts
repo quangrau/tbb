@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import type { Room, Player } from '../types'
+import { create } from "zustand";
+import type { Room, Player } from "../types";
 import {
   createRoom as createRoomApi,
   joinRoom as joinRoomApi,
@@ -8,28 +8,30 @@ import {
   setPlayerReady as setPlayerReadyApi,
   updateRoomStatus,
   leaveRoom as leaveRoomApi,
-} from '../services/roomService'
-import { subscribeToRoom } from '../services/realtimeService'
+  resetRoomForReplay,
+} from "../services/roomService";
+import { subscribeToRoom } from "../services/realtimeService";
 import {
   clearActiveRoomCode,
   clearActiveRoomId,
   setActiveRoomCode,
   setActiveRoomId,
-} from '../utils/activeRoom'
+} from "../utils/activeRoom";
+import { ROOM_STATUS } from "../utils/constants";
 
 interface ChallengeSettings {
-  questionsCount?: number
-  timePerQuestionSec?: number
-  maxPlayers?: number
+  questionsCount?: number;
+  timePerQuestionSec?: number;
+  maxPlayers?: number;
 }
 
 interface RoomState {
   // State
-  room: Room | null
-  players: Player[]
-  currentPlayer: Player | null
-  isLoading: boolean
-  error: string | null
+  room: Room | null;
+  players: Player[];
+  currentPlayer: Player | null;
+  isLoading: boolean;
+  error: string | null;
 
   // Actions
   createRoom: (
@@ -37,18 +39,19 @@ interface RoomState {
     term: number,
     deviceId: string,
     nickname: string,
-    settings?: ChallengeSettings
-  ) => Promise<void>
-  joinRoom: (code: string, deviceId: string, nickname: string) => Promise<void>
-  loadRoom: (roomId: string, deviceId: string) => Promise<void>
-  setReady: (isReady: boolean) => Promise<void>
-  startGame: () => Promise<void>
-  leaveRoom: () => Promise<void>
-  reset: () => void
+    settings?: ChallengeSettings,
+  ) => Promise<void>;
+  joinRoom: (code: string, deviceId: string, nickname: string) => Promise<void>;
+  loadRoom: (roomId: string, deviceId: string) => Promise<void>;
+  setReady: (isReady: boolean) => Promise<void>;
+  startGame: () => Promise<void>;
+  startReplay: () => Promise<void>;
+  leaveRoom: () => Promise<void>;
+  reset: () => void;
 
   // Internal
-  _unsubscribe: (() => void) | null
-  _subscribe: (roomId: string) => void
+  _unsubscribe: (() => void) | null;
+  _subscribe: (roomId: string) => void;
 }
 
 export const useRoomStore = create<RoomState>((set, get) => ({
@@ -62,32 +65,53 @@ export const useRoomStore = create<RoomState>((set, get) => ({
 
   // Subscribe to real-time updates
   _subscribe: (roomId: string) => {
-    const { _unsubscribe } = get()
+    const { _unsubscribe } = get();
     if (_unsubscribe) {
-      _unsubscribe()
+      _unsubscribe();
     }
+
+    let replayRoomRefreshInFlight = false;
+    let wasAllPlayersFinished = false;
 
     const subscription = subscribeToRoom(
       roomId,
       (room) => {
-        set({ room })
+        set({ room });
       },
       (players) => {
         set((state) => {
-          if (!state.currentPlayer) return { players }
-          const updated = players.find((p) => p.id === state.currentPlayer?.id)
-          if (!updated) return { players }
-          return { players, currentPlayer: updated }
-        })
-      }
-    )
+          if (!state.currentPlayer) return { players };
+          const updated = players.find((p) => p.id === state.currentPlayer?.id);
+          if (!updated) return { players };
+          return { players, currentPlayer: updated };
+        });
 
-    set({ _unsubscribe: subscription.unsubscribe })
+        const isAllPlayersFinished =
+          players.length > 0 && players.every((p) => p.is_finished);
+        const replayDetected = wasAllPlayersFinished && !isAllPlayersFinished;
+        wasAllPlayersFinished = isAllPlayersFinished;
+
+        if (!replayDetected) return;
+        if (replayRoomRefreshInFlight) return;
+        replayRoomRefreshInFlight = true;
+
+        fetchRoom(roomId)
+          .then((freshRoom) => {
+            if (!freshRoom) return;
+            set({ room: freshRoom });
+          })
+          .finally(() => {
+            replayRoomRefreshInFlight = false;
+          });
+      },
+    );
+
+    set({ _unsubscribe: subscription.unsubscribe });
   },
 
   // Create a new room
   createRoom: async (grade, term, deviceId, nickname, settings) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null });
     try {
       const { room, player } = await createRoomApi({
         grade,
@@ -95,65 +119,66 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         deviceId,
         nickname,
         ...settings,
-      })
+      });
       set({
         room,
         players: [player],
         currentPlayer: player,
         isLoading: false,
-      })
-      setActiveRoomId(room.id)
-      setActiveRoomCode(room.code)
-      get()._subscribe(room.id)
+      });
+      setActiveRoomId(room.id);
+      setActiveRoomCode(room.code);
+      get()._subscribe(room.id);
     } catch (err) {
       set({
-        error: err instanceof Error ? err.message : 'Failed to create room',
+        error: err instanceof Error ? err.message : "Failed to create room",
         isLoading: false,
-      })
-      throw err
+      });
+      throw err;
     }
   },
 
   // Join an existing room
   joinRoom: async (code, deviceId, nickname) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null });
     try {
-      const { room, player } = await joinRoomApi({ code, deviceId, nickname })
-      const players = await fetchRoomPlayers(room.id)
+      const { room, player } = await joinRoomApi({ code, deviceId, nickname });
+      const players = await fetchRoomPlayers(room.id);
       set({
         room,
         players,
         currentPlayer: player,
         isLoading: false,
-      })
-      setActiveRoomId(room.id)
-      setActiveRoomCode(room.code)
-      get()._subscribe(room.id)
+      });
+      setActiveRoomId(room.id);
+      setActiveRoomCode(room.code);
+      get()._subscribe(room.id);
     } catch (err) {
       set({
-        error: err instanceof Error ? err.message : 'Failed to join room',
+        error: err instanceof Error ? err.message : "Failed to join room",
         isLoading: false,
-      })
-      throw err
+      });
+      throw err;
     }
   },
 
   // Load an existing room (for page refresh)
   loadRoom: async (roomId, deviceId) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null });
     try {
-      const room = await fetchRoom(roomId)
+      const room = await fetchRoom(roomId);
       if (!room) {
-        throw new Error('Room not found')
+        throw new Error("Room not found");
       }
 
-      const players = await fetchRoomPlayers(roomId)
-      const currentPlayer = players.find(p => p.device_id === deviceId) || null
+      const players = await fetchRoomPlayers(roomId);
+      const currentPlayer =
+        players.find((p) => p.device_id === deviceId) || null;
 
       if (!currentPlayer) {
-        clearActiveRoomId()
-        clearActiveRoomCode()
-        throw new Error('Player not found in room')
+        clearActiveRoomId();
+        clearActiveRoomCode();
+        throw new Error("Player not found in room");
       }
 
       set({
@@ -161,87 +186,111 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         players,
         currentPlayer,
         isLoading: false,
-      })
-      setActiveRoomId(roomId)
-      setActiveRoomCode(room.code)
-      get()._subscribe(roomId)
+      });
+      setActiveRoomId(roomId);
+      setActiveRoomCode(room.code);
+      get()._subscribe(roomId);
     } catch (err) {
       set({
-        error: err instanceof Error ? err.message : 'Failed to load room',
+        error: err instanceof Error ? err.message : "Failed to load room",
         isLoading: false,
-      })
-      throw err
+      });
+      throw err;
     }
   },
 
   // Toggle ready status
   setReady: async (isReady) => {
-    const { currentPlayer, room, players } = get()
-    if (!currentPlayer || !room) return
+    const { currentPlayer, room, players } = get();
+    if (!currentPlayer || !room) return;
 
     try {
-      await setPlayerReadyApi(currentPlayer.id, isReady)
+      await setPlayerReadyApi(currentPlayer.id, isReady);
 
       // Optimistic update
       set({
         currentPlayer: { ...currentPlayer, is_ready: isReady },
-        players: players.map(p =>
-          p.id === currentPlayer.id ? { ...p, is_ready: isReady } : p
+        players: players.map((p) =>
+          p.id === currentPlayer.id ? { ...p, is_ready: isReady } : p,
         ),
-      })
+      });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'Failed to update ready status' })
+      set({
+        error:
+          err instanceof Error ? err.message : "Failed to update ready status",
+      });
     }
   },
 
   // Start the game (called when all players are ready)
   startGame: async () => {
-    const { room } = get()
-    if (!room) return
+    const { room, players, currentPlayer } = get();
+    if (!room) return;
+    if (!currentPlayer?.is_owner) return;
+
+    const isRoomFull = players.length >= room.max_players;
+    const allPlayersReady = isRoomFull && players.every((p) => p.is_ready);
+    if (!allPlayersReady) return;
+    if (room.status === ROOM_STATUS.PLAYING) return;
 
     try {
-      await updateRoomStatus(room.id, 'playing')
+      await updateRoomStatus(room.id, ROOM_STATUS.PLAYING);
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'Failed to start game' })
+      set({
+        error: err instanceof Error ? err.message : "Failed to start game",
+      });
+    }
+  },
+
+  startReplay: async () => {
+    const { currentPlayer, room } = get();
+    if (!room || !currentPlayer?.is_owner) return;
+
+    try {
+      await resetRoomForReplay(room.id);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : "Failed to start replay",
+      });
     }
   },
 
   // Leave the room
   leaveRoom: async () => {
-    const { currentPlayer, _unsubscribe } = get()
+    const { currentPlayer, _unsubscribe } = get();
 
     if (_unsubscribe) {
-      _unsubscribe()
+      _unsubscribe();
     }
 
     if (currentPlayer) {
       try {
-        await leaveRoomApi(currentPlayer.id)
+        await leaveRoomApi(currentPlayer.id);
       } catch {
         // Ignore errors when leaving
       }
     }
 
-    clearActiveRoomId()
-    clearActiveRoomCode()
+    clearActiveRoomId();
+    clearActiveRoomCode();
     set({
       room: null,
       players: [],
       currentPlayer: null,
       error: null,
       _unsubscribe: null,
-    })
+    });
   },
 
   // Reset store state
   reset: () => {
-    const { _unsubscribe } = get()
+    const { _unsubscribe } = get();
     if (_unsubscribe) {
-      _unsubscribe()
+      _unsubscribe();
     }
 
-    clearActiveRoomId()
-    clearActiveRoomCode()
+    clearActiveRoomId();
+    clearActiveRoomCode();
     set({
       room: null,
       players: [],
@@ -249,6 +298,6 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       isLoading: false,
       error: null,
       _unsubscribe: null,
-    })
+    });
   },
-}))
+}));

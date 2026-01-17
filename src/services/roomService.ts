@@ -1,60 +1,66 @@
-import { supabase } from '../config/supabase'
-import type { Room, Player } from '../types'
-import { generateRoomCode } from '../utils/generateRoomCode'
-import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTIONS_COUNT, DEFAULT_TIME_PER_QUESTION_SEC } from '../utils/constants'
+import { supabase } from "../config/supabase";
+import type { Room, Player } from "../types";
+import { generateRoomCode } from "../utils/generateRoomCode";
+import {
+  DEFAULT_MAX_PLAYERS,
+  DEFAULT_QUESTIONS_COUNT,
+  DEFAULT_TIME_PER_QUESTION_SEC,
+  ROOM_STATUS,
+} from "../utils/constants";
 
 interface CreateRoomParams {
-  grade: number
-  term: number  // 0 = all terms
-  deviceId: string
-  nickname: string
-  questionsCount?: number
-  timePerQuestionSec?: number
-  maxPlayers?: number
+  grade: number;
+  term: number; // 0 = all terms
+  deviceId: string;
+  nickname: string;
+  questionsCount?: number;
+  timePerQuestionSec?: number;
+  maxPlayers?: number;
 }
 
 interface CreateRoomResult {
-  room: Room
-  player: Player
+  room: Room;
+  player: Player;
 }
 
 /**
  * Fetches random question IDs for a given grade and term
  * @param term - 0 means all terms
  */
-async function fetchRandomQuestionIds(
+export async function fetchRandomQuestionIds(
   grade: number,
   term: number,
-  count: number
+  count: number,
 ): Promise<string[]> {
-  let query = supabase
-    .from('questions')
-    .select('id')
-    .eq('grade', grade)
+  let query = supabase.from("questions").select("id").eq("grade", grade);
 
   // Only filter by term if a specific term is selected (term > 0)
   if (term > 0) {
-    query = query.eq('term', term)
+    query = query.eq("term", term);
   }
 
-  const { data, error } = await query
+  const { data, error } = await query;
 
-  if (error) throw new Error(`Failed to fetch questions: ${error.message}`)
+  if (error) throw new Error(`Failed to fetch questions: ${error.message}`);
 
-  const termLabel = term > 0 ? `Term ${term}` : 'All Terms'
+  const termLabel = term > 0 ? `Term ${term}` : "All Terms";
   if (!data || data.length < count) {
-    throw new Error(`Not enough questions available for Grade ${grade}, ${termLabel}. Found ${data?.length || 0}, need ${count}.`)
+    throw new Error(
+      `Not enough questions available for Grade ${grade}, ${termLabel}. Found ${data?.length || 0}, need ${count}.`,
+    );
   }
 
   // Shuffle and pick random questions
-  const shuffled = [...data].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count).map(q => q.id)
+  const shuffled = [...data].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).map((q) => q.id);
 }
 
 /**
  * Creates a new room with random questions and adds the creator as the first player
  */
-export async function createRoom(params: CreateRoomParams): Promise<CreateRoomResult> {
+export async function createRoom(
+  params: CreateRoomParams,
+): Promise<CreateRoomResult> {
   const {
     grade,
     term,
@@ -63,35 +69,35 @@ export async function createRoom(params: CreateRoomParams): Promise<CreateRoomRe
     questionsCount = DEFAULT_QUESTIONS_COUNT,
     timePerQuestionSec = DEFAULT_TIME_PER_QUESTION_SEC,
     maxPlayers = DEFAULT_MAX_PLAYERS,
-  } = params
+  } = params;
 
   // Fetch random questions for this room
-  const questionIds = await fetchRandomQuestionIds(grade, term, questionsCount)
+  const questionIds = await fetchRandomQuestionIds(grade, term, questionsCount);
 
   // Generate a unique room code (retry if collision)
-  let code: string
-  let attempts = 0
-  const maxAttempts = 10
+  let code: string;
+  let attempts = 0;
+  const maxAttempts = 10;
 
   while (attempts < maxAttempts) {
-    code = generateRoomCode()
+    code = generateRoomCode();
     const { data: existing } = await supabase
-      .from('rooms')
-      .select('id')
-      .eq('code', code)
-      .single()
+      .from("rooms")
+      .select("id")
+      .eq("code", code)
+      .single();
 
-    if (!existing) break
-    attempts++
+    if (!existing) break;
+    attempts++;
   }
 
   if (attempts >= maxAttempts) {
-    throw new Error('Failed to generate unique room code')
+    throw new Error("Failed to generate unique room code");
   }
 
   // Create the room
   const { data: room, error: roomError } = await supabase
-    .from('rooms')
+    .from("rooms")
     .insert({
       code: code!,
       grade,
@@ -100,103 +106,107 @@ export async function createRoom(params: CreateRoomParams): Promise<CreateRoomRe
       questions_count: questionsCount,
       time_per_question_sec: timePerQuestionSec,
       question_ids: questionIds,
-      status: 'waiting',
+      status: ROOM_STATUS.WAITING,
     })
     .select()
-    .single()
+    .single();
 
-  if (roomError) throw new Error(`Failed to create room: ${roomError.message}`)
+  if (roomError) throw new Error(`Failed to create room: ${roomError.message}`);
 
   // Add the creator as the first player
   const { data: player, error: playerError } = await supabase
-    .from('room_players')
+    .from("room_players")
     .insert({
       room_id: room.id,
       device_id: deviceId,
       nickname,
+      is_owner: true,
     })
     .select()
-    .single()
+    .single();
 
-  if (playerError) throw new Error(`Failed to join room: ${playerError.message}`)
+  if (playerError)
+    throw new Error(`Failed to join room: ${playerError.message}`);
 
-  return { room, player }
+  return { room, player };
 }
 
 interface JoinRoomParams {
-  code: string
-  deviceId: string
-  nickname: string
+  code: string;
+  deviceId: string;
+  nickname: string;
 }
 
 interface JoinRoomResult {
-  room: Room
-  player: Player
+  room: Room;
+  player: Player;
 }
 
 /**
  * Joins an existing room by code
  */
-export async function joinRoom(params: JoinRoomParams): Promise<JoinRoomResult> {
-  const { code, deviceId, nickname } = params
+export async function joinRoom(
+  params: JoinRoomParams,
+): Promise<JoinRoomResult> {
+  const { code, deviceId, nickname } = params;
 
   // Find the room by code
   const { data: room, error: roomError } = await supabase
-    .from('rooms')
-    .select('*')
-    .eq('code', code.toUpperCase())
-    .single()
+    .from("rooms")
+    .select("*")
+    .eq("code", code.toUpperCase())
+    .single();
 
   if (roomError || !room) {
-    throw new Error('Room not found. Please check the code and try again.')
+    throw new Error("Room not found. Please check the code and try again.");
   }
 
   // Check if player already in room
   const { data: existingPlayer } = await supabase
-    .from('room_players')
-    .select('*')
-    .eq('room_id', room.id)
-    .eq('device_id', deviceId)
-    .single()
+    .from("room_players")
+    .select("*")
+    .eq("room_id", room.id)
+    .eq("device_id", deviceId)
+    .single();
 
   if (existingPlayer) {
-    return { room, player: existingPlayer }
+    return { room, player: existingPlayer };
   }
 
   // Check room status (only blocks new players)
-  if (room.status !== 'waiting') {
-    throw new Error('This room is no longer accepting players.')
+  if (room.status !== "waiting") {
+    throw new Error("This room is no longer accepting players.");
   }
 
   // Check player count
   const { count } = await supabase
-    .from('room_players')
-    .select('*', { count: 'exact', head: true })
-    .eq('room_id', room.id)
+    .from("room_players")
+    .select("*", { count: "exact", head: true })
+    .eq("room_id", room.id);
 
   if (count !== null && count >= room.max_players) {
-    throw new Error('Room is full.')
+    throw new Error("Room is full.");
   }
 
   // Join the room
   const { data: player, error: playerError } = await supabase
-    .from('room_players')
+    .from("room_players")
     .insert({
       room_id: room.id,
       device_id: deviceId,
       nickname,
     })
     .select()
-    .single()
+    .single();
 
   if (playerError) {
-    if (playerError.code === '23505') {
-      throw new Error('You are already in this room.')
+    if (playerError.code === "23505") {
+      throw new Error("You are already in this room.");
     }
-    throw new Error(`Failed to join room: ${playerError.message}`)
+    throw new Error(`Failed to join room: ${playerError.message}`);
   }
 
-  return { room, player }
+  return { room, player };
 }
 
 /**
@@ -204,13 +214,13 @@ export async function joinRoom(params: JoinRoomParams): Promise<JoinRoomResult> 
  */
 export async function fetchRoom(roomId: string): Promise<Room | null> {
   const { data, error } = await supabase
-    .from('rooms')
-    .select('*')
-    .eq('id', roomId)
-    .single()
+    .from("rooms")
+    .select("*")
+    .eq("id", roomId)
+    .single();
 
-  if (error) return null
-  return data
+  if (error) return null;
+  return data;
 }
 
 /**
@@ -218,25 +228,28 @@ export async function fetchRoom(roomId: string): Promise<Room | null> {
  */
 export async function fetchRoomPlayers(roomId: string): Promise<Player[]> {
   const { data, error } = await supabase
-    .from('room_players')
-    .select('*')
-    .eq('room_id', roomId)
-    .order('joined_at', { ascending: true })
+    .from("room_players")
+    .select("*")
+    .eq("room_id", roomId)
+    .order("joined_at", { ascending: true });
 
-  if (error) throw new Error(`Failed to fetch players: ${error.message}`)
-  return data || []
+  if (error) throw new Error(`Failed to fetch players: ${error.message}`);
+  return data || [];
 }
 
 /**
  * Updates a player's ready status
  */
-export async function setPlayerReady(playerId: string, isReady: boolean): Promise<void> {
+export async function setPlayerReady(
+  playerId: string,
+  isReady: boolean,
+): Promise<void> {
   const { error } = await supabase
-    .from('room_players')
+    .from("room_players")
     .update({ is_ready: isReady })
-    .eq('id', playerId)
+    .eq("id", playerId);
 
-  if (error) throw new Error(`Failed to update ready status: ${error.message}`)
+  if (error) throw new Error(`Failed to update ready status: ${error.message}`);
 }
 
 /**
@@ -244,22 +257,22 @@ export async function setPlayerReady(playerId: string, isReady: boolean): Promis
  */
 export async function updateRoomStatus(
   roomId: string,
-  status: Room['status']
+  status: Room["status"],
 ): Promise<void> {
-  const updates: Record<string, unknown> = { status }
+  const updates: Record<string, unknown> = { status };
 
-  if (status === 'playing') {
-    updates.started_at = new Date().toISOString()
-  } else if (status === 'finished') {
-    updates.finished_at = new Date().toISOString()
+  if (status === ROOM_STATUS.PLAYING) {
+    updates.started_at = new Date().toISOString();
+  } else if (status === ROOM_STATUS.FINISHED) {
+    updates.finished_at = new Date().toISOString();
   }
 
   const { error } = await supabase
-    .from('rooms')
+    .from("rooms")
     .update(updates)
-    .eq('id', roomId)
+    .eq("id", roomId);
 
-  if (error) throw new Error(`Failed to update room status: ${error.message}`)
+  if (error) throw new Error(`Failed to update room status: ${error.message}`);
 }
 
 /**
@@ -267,18 +280,64 @@ export async function updateRoomStatus(
  */
 export async function leaveRoom(playerId: string): Promise<void> {
   const { error } = await supabase
-    .from('room_players')
+    .from("room_players")
     .delete()
-    .eq('id', playerId)
+    .eq("id", playerId);
 
-  if (error) throw new Error(`Failed to leave room: ${error.message}`)
+  if (error) throw new Error(`Failed to leave room: ${error.message}`);
 }
 
 export async function updatePlayerHeartbeat(playerId: string): Promise<void> {
   const { error } = await supabase
-    .from('room_players')
+    .from("room_players")
     .update({ last_heartbeat: new Date().toISOString() })
-    .eq('id', playerId)
+    .eq("id", playerId);
 
-  if (error) throw new Error(`Failed to update heartbeat: ${error.message}`)
+  if (error) throw new Error(`Failed to update heartbeat: ${error.message}`);
+}
+
+export async function resetRoomForReplay(roomId: string): Promise<void> {
+  const room = await fetchRoom(roomId);
+  if (!room) throw new Error("Room not found");
+
+  const questionIds = await fetchRandomQuestionIds(
+    room.grade,
+    room.term,
+    room.questions_count,
+  );
+
+  const { error: roomError } = await supabase
+    .from("rooms")
+    .update({
+      status: ROOM_STATUS.WAITING,
+      question_ids: questionIds,
+      started_at: null,
+      finished_at: null,
+    })
+    .eq("id", roomId);
+
+  if (roomError) throw new Error(`Failed to reset room: ${roomError.message}`);
+
+  const { error: playersError } = await supabase
+    .from("room_players")
+    .update({
+      is_ready: false,
+      is_finished: false,
+      score: 0,
+      current_question_index: 0,
+      total_time_ms: 0,
+      finished_at: null,
+    })
+    .eq("room_id", roomId);
+
+  if (playersError)
+    throw new Error(`Failed to reset players: ${playersError.message}`);
+
+  const { error: answersError } = await supabase
+    .from("answers")
+    .delete()
+    .eq("room_id", roomId);
+
+  if (answersError)
+    throw new Error(`Failed to delete answers: ${answersError.message}`);
 }

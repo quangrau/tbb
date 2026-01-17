@@ -11,7 +11,13 @@ import { useDeviceId } from "../hooks/useDeviceId";
 import { useNow } from "../hooks/useNow";
 import { updatePlayerHeartbeat } from "../services/roomService";
 import { getActiveRoomCode, getActiveRoomId } from "../utils/activeRoom";
-import { DEFAULT_TIME_PER_QUESTION_SEC } from "../utils/constants";
+import {
+  DEFAULT_TIME_PER_QUESTION_SEC,
+  HEARTBEAT_INTERVAL_MS,
+  PRESENCE_POLL_INTERVAL_MS,
+  ROOM_STATUS,
+  ROUTES,
+} from "../utils/constants";
 import { isPlayerOnline } from "../utils/presence";
 import {
   forceFinishUnfinishedPlayers,
@@ -21,7 +27,7 @@ import {
 export default function ChallengePage() {
   const navigate = useNavigate();
   const deviceId = useDeviceId();
-  const nowMs = useNow(5000);
+  const nowMs = useNow(PRESENCE_POLL_INTERVAL_MS);
 
   const hasAttemptedRestoreRef = useRef(false);
   const {
@@ -111,16 +117,16 @@ export default function ChallengePage() {
         loadRoom(activeRoomId, deviceId).catch(() => {
           const activeRoomCode = getActiveRoomCode();
           if (!activeRoomCode) {
-            navigate("/");
+            navigate(ROUTES.home);
             return;
           }
           joinRoom(activeRoomCode, deviceId, "Rejoin").catch(() => {
-            navigate("/");
+            navigate(ROUTES.home);
           });
         });
         return;
       }
-      navigate("/");
+      navigate(ROUTES.home);
       return;
     }
 
@@ -154,13 +160,13 @@ export default function ChallengePage() {
   // Navigate to results when all players finished
   useEffect(() => {
     if (isFinished && !isWaitingForOthers) {
-      navigate("/results");
+      navigate(ROUTES.results);
     }
   }, [isFinished, isWaitingForOthers, navigate]);
 
   useEffect(() => {
-    if (room?.status === "finished") {
-      navigate("/results");
+    if (room?.status === ROOM_STATUS.FINISHED) {
+      navigate(ROUTES.results);
     }
   }, [room?.status, navigate]);
 
@@ -170,7 +176,7 @@ export default function ChallengePage() {
     updatePlayerHeartbeat(currentPlayerId).catch(() => {});
     const id = window.setInterval(() => {
       updatePlayerHeartbeat(currentPlayerId).catch(() => {});
-    }, 15000);
+    }, HEARTBEAT_INTERVAL_MS);
 
     return () => window.clearInterval(id);
   }, [currentPlayerId]);
@@ -208,7 +214,7 @@ export default function ChallengePage() {
     const timePerQuestionSec = room?.time_per_question_sec;
 
     if (!roomId) return;
-    if (roomStatus !== "playing") return;
+    if (roomStatus !== ROOM_STATUS.PLAYING) return;
     if (!startedAt) return;
     if (questionsCount === undefined || timePerQuestionSec === undefined)
       return;

@@ -5,16 +5,17 @@ import JoinRoomPage from './pages/JoinRoomPage'
 import WaitingRoomPage from './pages/WaitingRoomPage'
 import ChallengePage from './pages/ChallengePage'
 import ResultsPage from './pages/ResultsPage'
+import { ROUTES } from './utils/constants'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/create" element={<CreateRoomPage />} />
-      <Route path="/join" element={<JoinRoomPage />} />
-      <Route path="/waiting" element={<WaitingRoomPage />} />
-      <Route path="/challenge" element={<ChallengePage />} />
-      <Route path="/results" element={<ResultsPage />} />
+      <Route path={ROUTES.home} element={<HomePage />} />
+      <Route path={ROUTES.create} element={<CreateRoomPage />} />
+      <Route path={ROUTES.join} element={<JoinRoomPage />} />
+      <Route path={ROUTES.waiting} element={<WaitingRoomPage />} />
+      <Route path={ROUTES.challenge} element={<ChallengePage />} />
+      <Route path={ROUTES.results} element={<ResultsPage />} />
     </Routes>
   )
 }

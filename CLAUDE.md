@@ -24,6 +24,12 @@ src/
 └── utils/           # Utility functions
 ```
 
+## Coding Conventions
+
+- Avoid magic numbers: use named constants (prefer `src/utils/constants.ts` for shared values).
+- Avoid hardcoded strings for shared concepts (routes, room status, realtime channel prefixes, localStorage keys): centralize as constants/types.
+- Prefer existing primitives: `RoomStatus` type, `DEFAULT_*` constants, and `utils/activeRoom` helpers.
+
 ## Commands
 
 ```bash
