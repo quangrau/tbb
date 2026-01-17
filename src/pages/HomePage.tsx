@@ -1,9 +1,9 @@
-import { useNavigate } from 'react-router-dom'
-import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
+import { useNavigate } from "react-router-dom";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 
 export default function HomePage() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -18,11 +18,7 @@ export default function HomePage() {
 
       <Card className="w-full max-w-md">
         <div className="space-y-4">
-          <Button
-            fullWidth
-            size="lg"
-            onClick={() => navigate('/create')}
-          >
+          <Button fullWidth size="lg" onClick={() => navigate("/create")}>
             Create Room
           </Button>
 
@@ -30,7 +26,7 @@ export default function HomePage() {
             fullWidth
             size="lg"
             variant="secondary"
-            onClick={() => navigate('/join')}
+            onClick={() => navigate("/join")}
           >
             Join Room
           </Button>
@@ -38,8 +34,8 @@ export default function HomePage() {
       </Card>
 
       <p className="mt-8 text-white/60 text-sm">
-        A math learning game for Primary 2-4 students
+        A math learning game for primary school students
       </p>
     </div>
-  )
+  );
 }
