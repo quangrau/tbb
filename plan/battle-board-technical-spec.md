@@ -23,15 +23,15 @@
 
 ## Tech Stack
 
-| Layer | Technology | Rationale |
-|-------|------------|-----------|
-| Frontend | React 18 + Vite | Fast dev, small bundle, familiar ecosystem |
-| Styling | TailwindCSS | Rapid UI development, mobile-first |
-| State | Zustand | Lightweight, simple for real-time state |
-| Backend | Supabase | All-in-one: DB, real-time, auth (future), free tier |
-| Database | PostgreSQL (via Supabase) | Relational, scalable, robust |
-| Real-time | Supabase Realtime | Built-in WebSocket subscriptions |
-| Hosting | Vercel | Zero-config React deployment, free tier |
+| Layer     | Technology                | Rationale                                           |
+| --------- | ------------------------- | --------------------------------------------------- |
+| Frontend  | React 18 + Vite           | Fast dev, small bundle, familiar ecosystem          |
+| Styling   | TailwindCSS               | Rapid UI development, mobile-first                  |
+| State     | Zustand                   | Lightweight, simple for real-time state             |
+| Backend   | Supabase                  | All-in-one: DB, real-time, auth (future), free tier |
+| Database  | PostgreSQL (via Supabase) | Relational, scalable, robust                        |
+| Real-time | Supabase Realtime         | Built-in WebSocket subscriptions                    |
+| Hosting   | Vercel                    | Zero-config React deployment, free tier             |
 
 ---
 
@@ -39,16 +39,17 @@
 
 Single source of truth for localStorage keys (avoid introducing duplicates).
 
-| Key | Purpose | Written By | Cleared By |
-|-----|---------|------------|------------|
-| `tbb_device_id` | Anonymous identity for this browser/device | `getDeviceId()` | `clearDeviceId()` |
-| `bb_active_room_id` | Last active room ID for refresh-resume | room store | room leave/reset, missing player in room |
-| `bb_active_room_code` | Last active room code (restore/rejoin + join form autofill) | room store, join form submit | room leave/reset |
-| `bb_last_nickname` | Last nickname used in create/join forms | create/join forms | (not cleared automatically) |
+| Key                   | Purpose                                                     | Written By                   | Cleared By                               |
+| --------------------- | ----------------------------------------------------------- | ---------------------------- | ---------------------------------------- |
+| `tbb_device_id`       | Anonymous identity for this browser/device                  | `getDeviceId()`              | `clearDeviceId()`                        |
+| `bb_active_room_id`   | Last active room ID for refresh-resume                      | room store                   | room leave/reset, missing player in room |
+| `bb_active_room_code` | Last active room code (restore/rejoin + join form autofill) | room store, join form submit | room leave/reset                         |
+| `bb_last_nickname`    | Last nickname used in create/join forms                     | create/join forms            | (not cleared automatically)              |
 
 ## Database Schema (Scalable Design)
 
 ### Design Principles
+
 - **No hardcoded player slots** - Use separate `room_players` table instead of `player1_*`, `player2_*` columns
 - **Flexible capacity** - Room can have 2 players today, 10 tomorrow
 - **Audit trail** - Track all answers for analytics and review
@@ -158,12 +159,12 @@ CREATE INDEX idx_answers_room ON answers(room_id);
 
 ### Scalability Notes
 
-| Current (MVP) | Future Ready |
-|---------------|--------------|
-| `max_players = 2` | Change to 10 for class challenges |
-| `questions_count = 10` | Configurable per room |
-| `time_per_question_sec = 10` | Configurable per room |
-| `room_players` table | Supports unlimited players per room |
+| Current (MVP)                | Future Ready                        |
+| ---------------------------- | ----------------------------------- |
+| `max_players = 2`            | Change to 10 for class challenges   |
+| `questions_count = 10`       | Configurable per room               |
+| `time_per_question_sec = 10` | Configurable per room               |
+| `room_players` table         | Supports unlimited players per room |
 
 ---
 
@@ -237,37 +238,46 @@ src/
 // Subscribe to room changes (status, player list)
 supabase
   .channel(`room:${roomId}`)
-  .on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'rooms',
-    filter: `id=eq.${roomId}`
-  }, handleRoomChange)
-  .on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'room_players',
-    filter: `room_id=eq.${roomId}`
-  }, handlePlayersChange)
-  .subscribe()
+  .on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "rooms",
+      filter: `id=eq.${roomId}`,
+    },
+    handleRoomChange,
+  )
+  .on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "room_players",
+      filter: `room_id=eq.${roomId}`,
+    },
+    handlePlayersChange,
+  )
+  .subscribe();
 ```
 
 ### What Gets Synced in Real-time
 
-| Event | Trigger | Subscribers See |
-|-------|---------|-----------------|
-| Player joins | INSERT room_players | Updated player list |
-| Player ready | UPDATE room_players.is_ready | Ready status change |
-| Game starts | UPDATE rooms.status = 'playing' | Navigate to challenge |
-| Player progress | UPDATE room_players.current_question_index | "Opponent: 6/10" |
-| Player finishes | UPDATE room_players.is_finished | Progress indicator |
-| All finished | UPDATE rooms.status = 'finished' | Navigate to results |
+| Event           | Trigger                                    | Subscribers See       |
+| --------------- | ------------------------------------------ | --------------------- |
+| Player joins    | INSERT room_players                        | Updated player list   |
+| Player ready    | UPDATE room_players.is_ready               | Ready status change   |
+| Game starts     | UPDATE rooms.status = 'playing'            | Navigate to challenge |
+| Player progress | UPDATE room_players.current_question_index | "Opponent: 6/10"      |
+| Player finishes | UPDATE room_players.is_finished            | Progress indicator    |
+| All finished    | UPDATE rooms.status = 'finished'           | Navigate to results   |
 
 ---
 
 ## Implementation Phases
 
 ### Phase 1: Foundation
+
 1. Create Vite + React + TailwindCSS project
 2. Set up Supabase project and tables
 3. Implement Supabase client and types
@@ -275,6 +285,7 @@ supabase
 5. Device ID generation and storage
 
 ### Phase 2: Room System
+
 1. CreateRoomPage: grade/term selection, code generation
 2. Server function: pick random questions, create room
 3. JoinRoomPage: code entry, nickname, join room
@@ -282,6 +293,7 @@ supabase
 5. Real-time subscription for player changes
 
 ### Phase 3: Challenge Core
+
 1. ChallengePage: question display, options
 2. 10-second countdown timer
 3. Answer submission → record in answers table
@@ -290,13 +302,18 @@ supabase
 6. "Waiting for others" state when finished
 
 ### Phase 4: Results & Review
-1. ResultsPage: fetch all players' scores/times
-2. Determine winner (score, then time tiebreaker)
-3. Display rankings (ready for N players)
-4. ReviewPage: fetch player's wrong answers
-5. Display question, their answer, correct answer, explanation
+
+1. Finalize room: set `rooms.status = 'finished'` when all players finished/forfeited
+2. ResultsPage: subscribe while waiting, fetch final players + rankings, highlight "you"
+3. Tie handling: support draw (same score and same total time), stable ordering for N players
+4. Results details: show score, total time, accuracy, and per-player completion status (for N players)
+5. ReviewPage: query player's wrong/timeout answers joined with `questions` (text/options/explanation)
+6. Review UX: handle "all correct" (empty review), allow filtering (wrong vs timeout), preserve question order (index)
+7. Access control: ensure only room players can read results/review (RLS/policies or server validation)
+8. Refresh support: allow results/review to restore on reload (room/player lookup + navigation guards)
 
 ### Phase 5: Polish
+
 1. Disconnect detection (heartbeat)
 2. Auto-forfeit after 30s inactivity
 3. Error handling and loading states
@@ -308,31 +325,35 @@ supabase
 ## Key Technical Decisions
 
 ### Room Code Generation
+
 ```typescript
 // 6 chars, no ambiguous characters (0/O, 1/I/L)
-const CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 function generateRoomCode(): string {
-  return Array.from({ length: 6 }, () =>
-    CHARS[Math.floor(Math.random() * CHARS.length)]
-  ).join('');
+  return Array.from(
+    { length: 6 },
+    () => CHARS[Math.floor(Math.random() * CHARS.length)],
+  ).join("");
 }
 ```
 
 ### Device ID (Anonymous Identity)
+
 ```typescript
 // Generate once, store in localStorage
 function getDeviceId(): string {
-  let id = localStorage.getItem('device_id');
+  let id = localStorage.getItem("device_id");
   if (!id) {
     id = crypto.randomUUID();
-    localStorage.setItem('device_id', id);
+    localStorage.setItem("device_id", id);
   }
   return id;
 }
 ```
 
 ### Timer Logic
+
 ```typescript
 // Client-side timer, server records answer_time_ms
 const [timeLeft, setTimeLeft] = useState(10);
@@ -344,6 +365,7 @@ await submitAnswer(questionId, selectedOption, answerTimeMs);
 ```
 
 ### Winner Determination (Scalable for N players)
+
 ```typescript
 function determineRankings(players: Player[]): Player[] {
   return [...players].sort((a, b) => {
@@ -360,12 +382,14 @@ function determineRankings(players: Player[]): Player[] {
 ## Content Import
 
 ### CSV Format
+
 ```csv
 grade,term,question_text,option_0,option_1,option_2,option_3,correct_index,explanation
 3,1,"What is 24 + 18?",32,42,52,62,1,"Add ones: 4+8=12. Add tens: 20+10=30. Total: 30+12=42"
 ```
 
 ### Import Script (Python)
+
 ```python
 # tools/import_questions.py
 import csv
@@ -391,6 +415,7 @@ def import_questions(csv_path: str):
 ## Verification Plan
 
 ### Manual Testing Checklist
+
 - [ ] Create room, get code
 - [ ] Join room with code on different device/browser
 - [ ] Both players see each other in waiting room
@@ -404,6 +429,7 @@ def import_questions(csv_path: str):
 - [ ] Disconnect triggers forfeit after 30s
 
 ### Edge Cases
+
 - [ ] Player lets all timers expire (0 points, 100s time)
 - [ ] Same device joins twice (should block)
 - [ ] Invalid room code

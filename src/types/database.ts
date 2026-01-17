@@ -220,6 +220,61 @@ export interface Database {
           },
         ];
       };
+      question_reports: {
+        Row: {
+          id: string;
+          question_id: string;
+          room_id: string | null;
+          player_id: string | null;
+          report_type: string;
+          report_text: string | null;
+          selected_option_index: number | null;
+          answer_text: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          question_id: string;
+          room_id?: string | null;
+          player_id?: string | null;
+          report_type: string;
+          report_text?: string | null;
+          selected_option_index?: number | null;
+          answer_text?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          question_id?: string;
+          room_id?: string | null;
+          player_id?: string | null;
+          report_type?: string;
+          report_text?: string | null;
+          selected_option_index?: number | null;
+          answer_text?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_reports_question_id_fkey";
+            columns: ["question_id"];
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "question_reports_room_id_fkey";
+            columns: ["room_id"];
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "question_reports_player_id_fkey";
+            columns: ["player_id"];
+            referencedRelation: "room_players";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -248,3 +303,4 @@ export type Question = Tables<"questions">;
 export type Room = Tables<"rooms">;
 export type Player = Tables<"room_players">;
 export type Answer = Tables<"answers">;
+export type QuestionReport = Tables<"question_reports">;

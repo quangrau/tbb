@@ -1,11 +1,12 @@
-import { Routes, Route } from 'react-router-dom'
-import HomePage from './pages/HomePage'
-import CreateRoomPage from './pages/CreateRoomPage'
-import JoinRoomPage from './pages/JoinRoomPage'
-import WaitingRoomPage from './pages/WaitingRoomPage'
-import ChallengePage from './pages/ChallengePage'
-import ResultsPage from './pages/ResultsPage'
-import { ROUTES } from './utils/constants'
+import { Routes, Route } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import CreateRoomPage from "./pages/CreateRoomPage";
+import JoinRoomPage from "./pages/JoinRoomPage";
+import WaitingRoomPage from "./pages/WaitingRoomPage";
+import ChallengePage from "./pages/ChallengePage";
+import ResultsPage from "./pages/ResultsPage";
+import ReviewPage from "./pages/ReviewPage";
+import { ROUTES } from "./utils/constants";
 
 function App() {
   return (
@@ -16,8 +17,9 @@ function App() {
       <Route path={ROUTES.waiting} element={<WaitingRoomPage />} />
       <Route path={ROUTES.challenge} element={<ChallengePage />} />
       <Route path={ROUTES.results} element={<ResultsPage />} />
+      <Route path={ROUTES.review} element={<ReviewPage />} />
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -7,7 +7,10 @@ import { useDeviceId } from "../hooks/useDeviceId";
 import { useRoomStore } from "../stores/roomStore";
 import { useGameStore } from "../stores/gameStore";
 import type { Player } from "../types";
-import { fetchRoomResults } from "../services/gameService";
+import {
+  fetchRoomResultsWithDerivedStats,
+  type PlayerPostGameStats,
+} from "../services/gameService";
 import { getActiveRoomCode, getActiveRoomId } from "../utils/activeRoom";
 import { useNow } from "../hooks/useNow";
 import { isPlayerOnline } from "../utils/presence";
@@ -20,6 +23,18 @@ import {
 function formatTimeMs(totalTimeMs: number): string {
   const seconds = Math.round(totalTimeMs / 1000);
   return `${seconds}s`;
+}
+
+function winnerLabel(
+  players: Array<Player & { stats: PlayerPostGameStats }>,
+): string | null {
+  if (players.length === 0) return null;
+  const best = players[0];
+  const tied = players.filter(
+    (p) => p.score === best.score && p.total_time_ms === best.total_time_ms,
+  );
+  if (tied.length > 1) return "Draw";
+  return `${best.nickname} wins`;
 }
 
 export default function ResultsPage() {
@@ -54,7 +69,9 @@ export default function ResultsPage() {
     })),
   );
 
-  const [results, setResults] = useState<Player[]>([]);
+  const [results, setResults] = useState<
+    Array<Player & { stats: PlayerPostGameStats }>
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,7 +103,7 @@ export default function ResultsPage() {
       return;
     }
 
-    fetchRoomResults(room.id)
+    fetchRoomResultsWithDerivedStats(room.id)
       .then((players) => {
         setResults(players);
         setError(null);
@@ -118,6 +135,10 @@ export default function ResultsPage() {
     );
   }
 
+  const currentPlayerStats =
+    results.find((p) => p.id === currentPlayer.id)?.stats ?? null;
+  const header = winnerLabel(results);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="text-center mb-6">
@@ -125,12 +146,24 @@ export default function ResultsPage() {
           Results
         </h1>
         <p className="text-white/70">Room {room.code}</p>
+        {header && <p className="text-white/90 mt-2 font-semibold">{header}</p>}
       </div>
 
       <Card className="w-full max-w-md space-y-4">
         {error && (
           <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 text-center">
             <p className="text-red-200 text-sm">{error}</p>
+          </div>
+        )}
+
+        {currentPlayerStats && (
+          <div className="bg-white/10 rounded-xl p-4">
+            <p className="text-white font-semibold mb-1">Your summary</p>
+            <p className="text-white/80 text-sm">
+              Accuracy {currentPlayerStats.accuracyPercent}% ·{" "}
+              {currentPlayerStats.wrongCount} wrong ·{" "}
+              {currentPlayerStats.timeoutCount} timeout
+            </p>
           </div>
         )}
 
@@ -168,7 +201,12 @@ export default function ResultsPage() {
                       )}
                     </p>
                     <p className="text-white/60 text-sm">
-                      {player.score} pts · {formatTimeMs(player.total_time_ms)}
+                      {player.score} pts · {formatTimeMs(player.total_time_ms)}{" "}
+                      · {player.stats.accuracyPercent}% ·{" "}
+                      {player.stats.timeoutCount} timeout
+                    </p>
+                    <p className="text-white/50 text-xs">
+                      {player.is_finished ? "Finished" : "Not finished"}
                     </p>
                   </div>
                 </div>
@@ -178,6 +216,14 @@ export default function ResultsPage() {
         </div>
 
         <div className="pt-2 space-y-3">
+          <Button
+            fullWidth
+            size="lg"
+            variant="outline"
+            onClick={() => navigate(ROUTES.review)}
+          >
+            Review Mistakes
+          </Button>
           {currentPlayer.is_owner ? (
             <Button
               fullWidth

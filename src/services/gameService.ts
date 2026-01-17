@@ -1,5 +1,6 @@
 import { supabase } from "../config/supabase";
-import type { Question, Player } from "../types";
+import type { Answer, Question, Player } from "../types";
+import type { AnswerWithQuestion } from "../types/review.ts";
 import { validateAnswer } from "../utils/answerValidation";
 import { ROOM_STATUS } from "../utils/constants";
 
@@ -159,6 +160,151 @@ export async function fetchRoomResults(roomId: string): Promise<Player[]> {
 
   if (error) throw new Error(`Failed to fetch results: ${error.message}`);
   return data || [];
+}
+
+export interface PlayerPostGameStats {
+  totalQuestions: number;
+  correctCount: number;
+  wrongCount: number;
+  timeoutCount: number;
+  accuracyPercent: number;
+}
+
+function isTimeoutAnswerRow(row: {
+  selected_option_index: number | null;
+  answer_text: string | null;
+}): boolean {
+  return row.selected_option_index === null && row.answer_text === null;
+}
+
+export function computePlayerPostGameStats(
+  answers: Array<{
+    is_correct: boolean;
+    selected_option_index: number | null;
+    answer_text: string | null;
+  }>,
+): PlayerPostGameStats {
+  const totalQuestions = answers.length;
+  if (totalQuestions === 0) {
+    return {
+      totalQuestions: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      timeoutCount: 0,
+      accuracyPercent: 0,
+    };
+  }
+
+  let correctCount = 0;
+  let wrongCount = 0;
+  let timeoutCount = 0;
+
+  for (const answer of answers) {
+    if (answer.is_correct) {
+      correctCount += 1;
+      continue;
+    }
+    if (isTimeoutAnswerRow(answer)) {
+      timeoutCount += 1;
+      continue;
+    }
+    wrongCount += 1;
+  }
+
+  const accuracyPercent = Math.round((correctCount / totalQuestions) * 100);
+
+  return {
+    totalQuestions,
+    correctCount,
+    wrongCount,
+    timeoutCount,
+    accuracyPercent,
+  };
+}
+
+export async function fetchPlayerAnswersWithQuestions(
+  roomId: string,
+  playerId: string,
+): Promise<AnswerWithQuestion[]> {
+  const { data, error } = await supabase
+    .from("answers")
+    .select(
+      "id, room_id, player_id, question_id, question_index, selected_option_index, answer_text, is_correct, answer_time_ms, answered_at, questions(*)",
+    )
+    .eq("room_id", roomId)
+    .eq("player_id", playerId)
+    .order("question_index", { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch answers: ${error.message}`);
+  if (!data) return [];
+
+  type AnswerRow = Answer & { questions: Question | null };
+  const rows = data as unknown as AnswerRow[];
+
+  const result: AnswerWithQuestion[] = [];
+  for (const row of rows) {
+    const question = row.questions;
+    if (!question) continue;
+    const answer: Answer = {
+      id: row.id,
+      room_id: row.room_id,
+      player_id: row.player_id,
+      question_id: row.question_id,
+      question_index: row.question_index,
+      selected_option_index: row.selected_option_index,
+      answer_text: row.answer_text,
+      is_correct: row.is_correct,
+      answer_time_ms: row.answer_time_ms,
+      answered_at: row.answered_at,
+    };
+    result.push({ answer, question });
+  }
+  return result;
+}
+
+export async function fetchRoomResultsWithDerivedStats(
+  roomId: string,
+): Promise<Array<Player & { stats: PlayerPostGameStats }>> {
+  const [playersResult, answersResult] = await Promise.all([
+    supabase
+      .from("room_players")
+      .select("*")
+      .eq("room_id", roomId)
+      .order("score", { ascending: false })
+      .order("total_time_ms", { ascending: true }),
+    supabase
+      .from("answers")
+      .select("player_id, is_correct, selected_option_index, answer_text")
+      .eq("room_id", roomId),
+  ]);
+
+  if (playersResult.error)
+    throw new Error(`Failed to fetch results: ${playersResult.error.message}`);
+  if (answersResult.error)
+    throw new Error(`Failed to fetch answers: ${answersResult.error.message}`);
+
+  const players = playersResult.data ?? [];
+  const answers = answersResult.data ?? [];
+
+  const answersByPlayerId = new Map<
+    string,
+    Array<{
+      is_correct: boolean;
+      selected_option_index: number | null;
+      answer_text: string | null;
+    }>
+  >();
+
+  for (const answer of answers) {
+    const list = answersByPlayerId.get(answer.player_id) ?? [];
+    list.push(answer);
+    answersByPlayerId.set(answer.player_id, list);
+  }
+
+  return players.map((player) => {
+    const playerAnswers = answersByPlayerId.get(player.id) ?? [];
+    return { ...player, stats: computePlayerPostGameStats(playerAnswers) };
+  });
 }
 
 interface ForceFinishUnfinishedPlayersParams {

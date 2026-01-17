@@ -20,6 +20,21 @@ export const ROUTES = {
   waiting: "/waiting",
   challenge: "/challenge",
   results: "/results",
+  review: "/review",
+} as const;
+
+export const REVIEW_FILTER = {
+  ALL: "all",
+  WRONG: "wrong",
+  TIMEOUT: "timeout",
+} as const;
+
+export const REPORT_TYPE = {
+  INCORRECT_ANSWER: "incorrect_answer",
+  INCORRECT_EXPLANATION: "incorrect_explanation",
+  TYPO_FORMATTING: "typo_formatting",
+  AMBIGUOUS: "ambiguous",
+  OTHER: "other",
 } as const;
 
 export const ROOM_STATUS = {
