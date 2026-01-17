@@ -1,5 +1,8 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from "@vitejs/plugin-react";
+import type { InlineConfig } from "vitest";
+import { defineConfig, type UserConfig } from "vite";
+
+type UserConfigWithVitest = UserConfig & { test?: InlineConfig };
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,4 +13,10 @@ export default defineConfig({
   preview: {
     host: true,
   },
-})
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    restoreMocks: true,
+    clearMocks: true,
+  },
+} as UserConfigWithVitest);
