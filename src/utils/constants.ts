@@ -3,9 +3,10 @@ export const ROOM_CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 // Room settings
 export const ROOM_CODE_LENGTH = 6;
-export const DEFAULT_MAX_PLAYERS = 2;
+export const DEFAULT_MAX_PLAYERS = 5;
 export const DEFAULT_QUESTIONS_COUNT = 10;
 export const DEFAULT_TIME_PER_QUESTION_SEC = 10;
+export const MIN_PLAYERS_TO_START = 2;
 
 // Game settings
 export const TIMEOUT_ANSWER_TIME_MS = 10000;
@@ -25,8 +26,7 @@ export const ROUTES = {
 
 export const REVIEW_FILTER = {
   ALL: "all",
-  WRONG: "wrong",
-  TIMEOUT: "timeout",
+  REVIEW: "review",
 } as const;
 
 export const REPORT_TYPE = {

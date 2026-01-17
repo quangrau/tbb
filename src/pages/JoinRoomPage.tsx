@@ -6,9 +6,13 @@ import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { useRoomStore } from "../stores/roomStore";
 import { useDeviceId } from "../hooks/useDeviceId";
-import { getActiveRoomCode, setActiveRoomCode } from "../utils/activeRoom";
+import { getActiveRoomCode, getActiveRoomId } from "../utils/activeRoom";
 import { getLastNickname, setLastNickname } from "../utils/joinFormPrefs";
-import { NICKNAME_MAX_LENGTH, ROOM_CODE_LENGTH, ROUTES } from "../utils/constants";
+import {
+  NICKNAME_MAX_LENGTH,
+  ROOM_CODE_LENGTH,
+  ROUTES,
+} from "../utils/constants";
 
 export default function JoinRoomPage() {
   const navigate = useNavigate();
@@ -36,6 +40,19 @@ export default function JoinRoomPage() {
       setNickname(cachedNickname.slice(0, NICKNAME_MAX_LENGTH));
     }
   }, []);
+
+  useEffect(() => {
+    const attemptRestore = () => {
+      if (!navigator.onLine) return;
+      const activeRoomId = getActiveRoomId();
+      if (!activeRoomId) return;
+      navigate(ROUTES.waiting);
+    };
+
+    attemptRestore();
+    window.addEventListener("online", attemptRestore);
+    return () => window.removeEventListener("online", attemptRestore);
+  }, [navigate]);
 
   const handleCodeChange = (value: string) => {
     // Only allow alphanumeric, convert to uppercase
@@ -69,7 +86,6 @@ export default function JoinRoomPage() {
 
     setLocalError("");
     try {
-      setActiveRoomCode(trimmedCode);
       setLastNickname(trimmedNickname);
       await joinRoom(trimmedCode, deviceId, trimmedNickname);
       navigate(ROUTES.waiting);
@@ -130,7 +146,11 @@ export default function JoinRoomPage() {
             {isLoading ? "Joining..." : "Join Room"}
           </Button>
 
-          <Button fullWidth variant="outline" onClick={() => navigate(ROUTES.home)}>
+          <Button
+            fullWidth
+            variant="outline"
+            onClick={() => navigate(ROUTES.home)}
+          >
             Back
           </Button>
         </div>

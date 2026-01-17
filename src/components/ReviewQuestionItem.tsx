@@ -41,7 +41,7 @@ function answerBadge(item: AnswerWithQuestion): {
   className: string;
 } {
   if (isTimeout(item))
-    return { label: "Timeout", className: "bg-white/10 text-white/80" };
+    return { label: "No answer", className: "bg-white/10 text-white/60" };
   if (item.answer.is_correct)
     return { label: "Correct", className: "bg-green-500/20 text-green-100" };
   return { label: "Wrong", className: "bg-red-500/20 text-red-100" };
@@ -70,7 +70,7 @@ function buildYourAnswerLabel(
   item: AnswerWithQuestion,
   options: string[],
 ): string {
-  if (isTimeout(item)) return "Timeout";
+  if (isTimeout(item)) return "—";
 
   if (item.question.question_type === "multiple_choice") {
     const idx = item.answer.selected_option_index;
@@ -110,6 +110,7 @@ export function ReviewQuestionItem({
   );
 
   const badge = answerBadge(item);
+  const hasNoAnswer = isTimeout(item);
   const questionNumber = item.answer.question_index + 1;
   const correctAnswerLabel = useMemo(
     () => buildCorrectAnswerLabel(item, options),
@@ -144,7 +145,12 @@ export function ReviewQuestionItem({
 
       <div className="grid gap-1 text-sm">
         <p className="text-white/80">
-          Your answer: <span className="text-white">{yourAnswerLabel}</span>
+          Your answer:{" "}
+          {hasNoAnswer ? (
+            <span className="text-white/60">No answer</span>
+          ) : (
+            <span className="text-white">{yourAnswerLabel}</span>
+          )}
         </p>
         <p className="text-white/80">
           Correct answer:{" "}

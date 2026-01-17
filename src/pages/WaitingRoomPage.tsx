@@ -13,6 +13,7 @@ import { getActiveRoomCode, getActiveRoomId } from "../utils/activeRoom";
 import {
   GRADE_LABEL_BY_VALUE,
   HEARTBEAT_INTERVAL_MS,
+  MIN_PLAYERS_TO_START,
   PRESENCE_POLL_INTERVAL_MS,
   ROOM_STATUS,
   ROUTES,
@@ -126,8 +127,7 @@ export default function WaitingRoomPage() {
 
   // Check if all players are ready
   const allPlayersReady =
-    players.length >= 2 && players.every((p) => p.is_ready);
-  const isRoomFull = room && players.length >= room.max_players;
+    players.length >= MIN_PLAYERS_TO_START && players.every((p) => p.is_ready);
   const canStartGame = allPlayersReady && currentPlayer?.is_owner;
   const offlineOtherPlayers =
     currentPlayerId === null
@@ -143,6 +143,13 @@ export default function WaitingRoomPage() {
 
   const handleStartGame = async () => {
     if (!canStartGame) return;
+    if (!room) return;
+    if (players.length < room.max_players) {
+      const confirmed = window.confirm(
+        `Room is not full (${players.length}/${room.max_players}). Start anyway?`,
+      );
+      if (!confirmed) return;
+    }
     await startGame();
   };
 
@@ -204,18 +211,18 @@ export default function WaitingRoomPage() {
           />
         </div>
 
-        {!isRoomFull && (
+        {players.length < MIN_PLAYERS_TO_START && (
           <div className="bg-blue-500/20 border border-blue-400/30 rounded-xl p-4 text-center">
             <p className="text-blue-200 text-sm">
-              Share the room code with your friend to start!
+              Waiting for at least {MIN_PLAYERS_TO_START} players to start.
             </p>
           </div>
         )}
 
-        {isRoomFull && !allPlayersReady && (
+        {players.length >= MIN_PLAYERS_TO_START && !allPlayersReady && (
           <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-4 text-center">
             <p className="text-yellow-200 text-sm">
-              All players must be ready to start the challenge
+              All joined players must be ready to start the challenge
             </p>
           </div>
         )}
@@ -226,7 +233,6 @@ export default function WaitingRoomPage() {
             size="lg"
             variant={currentPlayer.is_ready ? "secondary" : "primary"}
             onClick={handleToggleReady}
-            disabled={!isRoomFull}
           >
             {currentPlayer.is_ready ? "Cancel Ready" : "I'm Ready!"}
           </Button>

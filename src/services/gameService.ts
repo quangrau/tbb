@@ -262,6 +262,68 @@ export async function fetchPlayerAnswersWithQuestions(
   return result;
 }
 
+export async function fetchPlayerReviewItemsForAllQuestions(params: {
+  roomId: string;
+  playerId: string;
+  questionIds: string[];
+  timePerQuestionSec: number;
+}): Promise<AnswerWithQuestion[]> {
+  const { roomId, playerId, questionIds, timePerQuestionSec } = params;
+
+  const [questions, answersResult] = await Promise.all([
+    fetchQuestionsByIds(questionIds),
+    supabase
+      .from("answers")
+      .select(
+        "id, room_id, player_id, question_id, question_index, selected_option_index, answer_text, is_correct, answer_time_ms, answered_at",
+      )
+      .eq("room_id", roomId)
+      .eq("player_id", playerId),
+  ]);
+
+  if (answersResult.error)
+    throw new Error(`Failed to fetch answers: ${answersResult.error.message}`);
+
+  const answers = (answersResult.data ?? []) as Answer[];
+  const answerByQuestionId = new Map<string, Answer>();
+  for (const answer of answers) {
+    answerByQuestionId.set(answer.question_id, answer);
+  }
+
+  const nowIso = new Date().toISOString();
+  const timeoutTimeMs = timePerQuestionSec * 1000;
+
+  const result: AnswerWithQuestion[] = [];
+  for (
+    let questionIndex = 0;
+    questionIndex < questions.length;
+    questionIndex += 1
+  ) {
+    const question = questions[questionIndex];
+    if (!question) continue;
+
+    const existingAnswer = answerByQuestionId.get(question.id);
+    const answer: Answer =
+      existingAnswer ??
+      ({
+        id: `missing:${roomId}:${playerId}:${questionIndex}`,
+        room_id: roomId,
+        player_id: playerId,
+        question_id: question.id,
+        question_index: questionIndex,
+        selected_option_index: null,
+        answer_text: null,
+        is_correct: false,
+        answer_time_ms: timeoutTimeMs,
+        answered_at: nowIso,
+      } satisfies Answer);
+
+    result.push({ answer, question });
+  }
+
+  return result;
+}
+
 export async function fetchRoomResultsWithDerivedStats(
   roomId: string,
 ): Promise<Array<Player & { stats: PlayerPostGameStats }>> {

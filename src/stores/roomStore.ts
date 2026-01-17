@@ -12,12 +12,11 @@ import {
 } from "../services/roomService";
 import { subscribeToRoom } from "../services/realtimeService";
 import {
-  clearActiveRoomCode,
-  clearActiveRoomId,
-  setActiveRoomCode,
-  setActiveRoomId,
+  clearActiveRoom,
+  getActiveRoomExpiresAtMs,
+  setActiveRoom,
 } from "../utils/activeRoom";
-import { ROOM_STATUS } from "../utils/constants";
+import { MIN_PLAYERS_TO_START, ROOM_STATUS } from "../utils/constants";
 
 interface ChallengeSettings {
   questionsCount?: number;
@@ -76,6 +75,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     const subscription = subscribeToRoom(
       roomId,
       (room) => {
+        const expiresAtMs = getActiveRoomExpiresAtMs(room);
+        setActiveRoom(room, expiresAtMs);
         set({ room });
       },
       (players) => {
@@ -126,8 +127,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         currentPlayer: player,
         isLoading: false,
       });
-      setActiveRoomId(room.id);
-      setActiveRoomCode(room.code);
+      const expiresAtMs = getActiveRoomExpiresAtMs(room);
+      setActiveRoom(room, expiresAtMs);
       get()._subscribe(room.id);
     } catch (err) {
       set({
@@ -150,8 +151,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         currentPlayer: player,
         isLoading: false,
       });
-      setActiveRoomId(room.id);
-      setActiveRoomCode(room.code);
+      const expiresAtMs = getActiveRoomExpiresAtMs(room);
+      setActiveRoom(room, expiresAtMs);
       get()._subscribe(room.id);
     } catch (err) {
       set({
@@ -176,8 +177,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         players.find((p) => p.device_id === deviceId) || null;
 
       if (!currentPlayer) {
-        clearActiveRoomId();
-        clearActiveRoomCode();
+        clearActiveRoom();
         throw new Error("Player not found in room");
       }
 
@@ -187,8 +187,8 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         currentPlayer,
         isLoading: false,
       });
-      setActiveRoomId(roomId);
-      setActiveRoomCode(room.code);
+      const expiresAtMs = getActiveRoomExpiresAtMs(room);
+      setActiveRoom(room, expiresAtMs);
       get()._subscribe(roomId);
     } catch (err) {
       set({
@@ -228,8 +228,9 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     if (!room) return;
     if (!currentPlayer?.is_owner) return;
 
-    const isRoomFull = players.length >= room.max_players;
-    const allPlayersReady = isRoomFull && players.every((p) => p.is_ready);
+    const hasEnoughPlayers = players.length >= MIN_PLAYERS_TO_START;
+    const allPlayersReady =
+      hasEnoughPlayers && players.every((p) => p.is_ready);
     if (!allPlayersReady) return;
     if (room.status === ROOM_STATUS.PLAYING) return;
 
@@ -271,8 +272,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       }
     }
 
-    clearActiveRoomId();
-    clearActiveRoomCode();
+    clearActiveRoom();
     set({
       room: null,
       players: [],
@@ -289,8 +289,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       _unsubscribe();
     }
 
-    clearActiveRoomId();
-    clearActiveRoomCode();
+    clearActiveRoom();
     set({
       room: null,
       players: [],

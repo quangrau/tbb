@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ReviewQuestionItem } from "../components/ReviewQuestionItem.tsx";
 import { useDeviceId } from "../hooks/useDeviceId";
-import { fetchPlayerAnswersWithQuestions } from "../services/gameService";
+import { fetchPlayerReviewItemsForAllQuestions } from "../services/gameService";
 import { submitQuestionReport } from "../services/reportService.ts";
 import { useRoomStore } from "../stores/roomStore";
 import type { AnswerWithQuestion, ReportPayload } from "../types/review.ts";
@@ -18,20 +18,11 @@ function filterLabel(filter: ReviewFilter): string {
   switch (filter) {
     case REVIEW_FILTER.ALL:
       return "All";
-    case REVIEW_FILTER.WRONG:
-      return "Wrong";
-    case REVIEW_FILTER.TIMEOUT:
-      return "Timeout";
+    case REVIEW_FILTER.REVIEW:
+      return "To review";
     default:
       return "All";
   }
-}
-
-function isTimeoutAnswer(item: AnswerWithQuestion): boolean {
-  return (
-    item.answer.selected_option_index === null &&
-    item.answer.answer_text === null
-  );
 }
 
 export default function ReviewPage() {
@@ -81,7 +72,12 @@ export default function ReviewPage() {
     }
 
     setIsLoading(true);
-    fetchPlayerAnswersWithQuestions(room.id, currentPlayer.id)
+    fetchPlayerReviewItemsForAllQuestions({
+      roomId: room.id,
+      playerId: currentPlayer.id,
+      questionIds: room.question_ids,
+      timePerQuestionSec: room.time_per_question_sec,
+    })
       .then((data: AnswerWithQuestion[]) => {
         setItems(data);
         setError(null);
@@ -102,17 +98,15 @@ export default function ReviewPage() {
 
   const filteredItems = useMemo(() => {
     if (filter === REVIEW_FILTER.ALL) return items;
-    if (filter === REVIEW_FILTER.WRONG)
+    if (filter === REVIEW_FILTER.REVIEW)
       return items.filter((item) => !item.answer.is_correct);
-    if (filter === REVIEW_FILTER.TIMEOUT)
-      return items.filter((item) => isTimeoutAnswer(item));
     return items;
   }, [filter, items]);
 
-  const wrongOrTimeoutCount = useMemo(() => {
+  const toReviewCount = useMemo(() => {
     let count = 0;
     for (const item of items) {
-      if (!item.answer.is_correct || isTimeoutAnswer(item)) count += 1;
+      if (!item.answer.is_correct) count += 1;
     }
     return count;
   }, [items]);
@@ -143,7 +137,7 @@ export default function ReviewPage() {
 
         <div className="flex items-center justify-between gap-2">
           <div className="text-white/80 text-sm">
-            {isLoading ? "Loading..." : `${wrongOrTimeoutCount} to review`}
+            {isLoading ? "Loading..." : `${toReviewCount} to review`}
           </div>
           <Button
             variant="outline"
@@ -154,19 +148,17 @@ export default function ReviewPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          {[REVIEW_FILTER.ALL, REVIEW_FILTER.WRONG, REVIEW_FILTER.TIMEOUT].map(
-            (value) => (
-              <Button
-                key={value}
-                variant={filter === value ? "primary" : "secondary"}
-                size="sm"
-                onClick={() => setFilter(value)}
-              >
-                {filterLabel(value)}
-              </Button>
-            ),
-          )}
+        <div className="grid grid-cols-2 gap-2">
+          {[REVIEW_FILTER.ALL, REVIEW_FILTER.REVIEW].map((value) => (
+            <Button
+              key={value}
+              variant={filter === value ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => setFilter(value)}
+            >
+              {filterLabel(value)}
+            </Button>
+          ))}
         </div>
 
         {!isLoading && items.length > 0 && filteredItems.length === 0 && (
@@ -175,7 +167,7 @@ export default function ReviewPage() {
           </div>
         )}
 
-        {!isLoading && items.length > 0 && wrongOrTimeoutCount === 0 && (
+        {!isLoading && items.length > 0 && toReviewCount === 0 && (
           <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-4 text-center">
             <p className="text-green-100 font-semibold">All correct!</p>
             <p className="text-green-100/80 text-sm">
