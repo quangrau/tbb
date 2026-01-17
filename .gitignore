@@ -29,3 +29,15 @@ coverage/
 
 # Misc
 *.tsbuildinfo
+
+# Docker
+docker-compose.override.yml
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# AI Coding
+.trae/documents/
+.trae/skills/
+.claude/skills

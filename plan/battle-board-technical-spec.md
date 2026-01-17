@@ -35,6 +35,17 @@
 
 ---
 
+## Client Local Storage Schema
+
+Single source of truth for localStorage keys (avoid introducing duplicates).
+
+| Key | Purpose | Written By | Cleared By |
+|-----|---------|------------|------------|
+| `tbb_device_id` | Anonymous identity for this browser/device | `getDeviceId()` | `clearDeviceId()` |
+| `bb_active_room_id` | Last active room ID for refresh-resume | room store | room leave/reset, missing player in room |
+| `bb_active_room_code` | Last active room code (restore/rejoin + join form autofill) | room store, join form submit | room leave/reset |
+| `bb_last_nickname` | Last nickname used in create/join forms | create/join forms | (not cleared automatically) |
+
 ## Database Schema (Scalable Design)
 
 ### Design Principles
