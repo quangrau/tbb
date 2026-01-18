@@ -139,6 +139,33 @@ export async function joinRoom(
   return { room: roomState, player };
 }
 
+export async function joinRoomById(params: {
+  roomId: string;
+  deviceId: string;
+  nickname: string;
+}): Promise<JoinRoomResult> {
+  roomState = buildRoom({ id: params.roomId });
+  const player = buildPlayer({
+    id: "sb-player-2",
+    room_id: roomState.id,
+    device_id: params.deviceId,
+    nickname: params.nickname,
+    is_owner: false,
+  });
+
+  playersState = [
+    buildPlayer({
+      id: "sb-player-1",
+      room_id: roomState.id,
+      nickname: "Host",
+      is_owner: true,
+    }),
+    player,
+  ];
+
+  return { room: roomState, player };
+}
+
 export async function fetchRoom(roomId: string): Promise<Room | null> {
   return roomId === roomState.id ? roomState : null;
 }
@@ -195,4 +222,3 @@ export async function resetRoomForReplay(roomId: string): Promise<void> {
     last_heartbeat: nowIso(),
   }));
 }
-
