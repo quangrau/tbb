@@ -37,6 +37,8 @@ const baseRoom: Room = {
   started_at: null,
   finished_at: null,
   expires_at: nowIso(60_000),
+  is_public: true,
+  name: "Test Room",
 };
 
 const host: Player = {

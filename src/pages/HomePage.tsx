@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { ROUTES } from "../utils/constants";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -20,17 +21,30 @@ export default function HomePage() {
         <div className="flex justify-center">
           <Card className="w-full max-w-md">
             <div className="space-y-4">
-              <Button fullWidth size="lg" onClick={() => navigate("/create")}>
-                Create Room
+              <Button
+                fullWidth
+                size="lg"
+                onClick={() => navigate(ROUTES.lobby)}
+              >
+                Find a Game
               </Button>
 
               <Button
                 fullWidth
                 size="lg"
                 variant="secondary"
-                onClick={() => navigate("/join")}
+                onClick={() => navigate(ROUTES.create)}
               >
-                Join Room
+                Create Room
+              </Button>
+
+              <Button
+                fullWidth
+                size="lg"
+                variant="outline"
+                onClick={() => navigate(ROUTES.join)}
+              >
+                Join with Code
               </Button>
             </div>
           </Card>

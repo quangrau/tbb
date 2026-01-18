@@ -1,4 +1,5 @@
 export { Button } from './Button'
 export { Card } from './Card'
+export { DropdownMenu } from './DropdownMenu'
 export { Input } from './Input'
 export { Timer } from './Timer'
