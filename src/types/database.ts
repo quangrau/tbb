@@ -74,6 +74,8 @@ export interface Database {
           started_at: string | null;
           finished_at: string | null;
           expires_at: string;
+          is_public: boolean;
+          name: string | null;
         };
         Insert: {
           id?: string;
@@ -89,6 +91,8 @@ export interface Database {
           started_at?: string | null;
           finished_at?: string | null;
           expires_at?: string;
+          is_public?: boolean;
+          name?: string | null;
         };
         Update: {
           id?: string;
@@ -104,6 +108,8 @@ export interface Database {
           started_at?: string | null;
           finished_at?: string | null;
           expires_at?: string;
+          is_public?: boolean;
+          name?: string | null;
         };
         Relationships: [];
       };

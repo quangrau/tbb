@@ -46,6 +46,8 @@ function buildRoom(overrides: Partial<Room> = {}): Room {
     started_at: null,
     finished_at: null,
     expires_at: nowIso(),
+    is_public: true,
+    name: "Test Room",
     ...overrides,
   };
 }

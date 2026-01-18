@@ -3,6 +3,7 @@ import type { Room, Player } from "../types";
 import {
   createRoom as createRoomApi,
   joinRoom as joinRoomApi,
+  joinRoomById as joinRoomByIdApi,
   fetchRoom,
   fetchRoomPlayers,
   setPlayerReady as setPlayerReadyApi,
@@ -22,6 +23,8 @@ interface ChallengeSettings {
   questionsCount?: number;
   timePerQuestionSec?: number;
   maxPlayers?: number;
+  isPublic?: boolean;
+  name?: string;
 }
 
 interface RoomState {
@@ -41,6 +44,11 @@ interface RoomState {
     settings?: ChallengeSettings,
   ) => Promise<void>;
   joinRoom: (code: string, deviceId: string, nickname: string) => Promise<void>;
+  joinRoomById: (
+    roomId: string,
+    deviceId: string,
+    nickname: string,
+  ) => Promise<void>;
   loadRoom: (roomId: string, deviceId: string) => Promise<void>;
   setReady: (isReady: boolean) => Promise<void>;
   startGame: () => Promise<void>;
@@ -144,6 +152,34 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { room, player } = await joinRoomApi({ code, deviceId, nickname });
+      const players = await fetchRoomPlayers(room.id);
+      set({
+        room,
+        players,
+        currentPlayer: player,
+        isLoading: false,
+      });
+      const expiresAtMs = getActiveRoomExpiresAtMs(room);
+      setActiveRoom(room, expiresAtMs);
+      get()._subscribe(room.id);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : "Failed to join room",
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  // Join an existing room by ID (for lobby)
+  joinRoomById: async (roomId, deviceId, nickname) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { room, player } = await joinRoomByIdApi({
+        roomId,
+        deviceId,
+        nickname,
+      });
       const players = await fetchRoomPlayers(room.id);
       set({
         room,

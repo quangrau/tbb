@@ -13,9 +13,11 @@ export const TIMEOUT_ANSWER_TIME_MS = 10000;
 export const HEARTBEAT_INTERVAL_MS = 15000;
 export const PRESENCE_POLL_INTERVAL_MS = 5000;
 export const NICKNAME_MAX_LENGTH = 20;
+export const LOBBY_REFRESH_INTERVAL_MS = 5000;
 
 export const ROUTES = {
   home: "/",
+  lobby: "/lobby",
   create: "/create",
   join: "/join",
   waiting: "/waiting",
@@ -48,6 +50,7 @@ export const REALTIME_CHANNEL = {
   roomState: (roomId: string) => `room:${roomId}:state`,
   roomProgress: (roomId: string) => `room:${roomId}:progress`,
   roomScore: (roomId: string) => `room:${roomId}:score`,
+  lobby: () => "lobby:public-rooms",
 } as const;
 
 // Local storage keys
