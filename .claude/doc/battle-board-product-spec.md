@@ -1,7 +1,7 @@
 # The Battle Board - Product Specification
 
 ## Vision
-The most engaging, high-quality multiplayer learning experience for primary school students, combining Singapore Math rigor with competitive gameplay.
+The most engaging, high-quality multiplayer learning experience for primary school students, fully aligned with the **Singapore MOE curriculum** across all subjects.
 
 ---
 
@@ -13,9 +13,9 @@ A real-time multiplayer quiz where players race to answer questions correctly. E
 ┌─────────────────────────────────────────────────────────────┐
 │  PLAYER JOURNEY                                             │
 │                                                             │
-│  1. Create or Join room using 6-digit code                  │
+│  1. Create or Join room using 6-character code              │
 │  2. Wait for all players to be ready                        │
-│  3. Race through 10 questions (10 seconds each)             │
+│  3. Race through a timed question set (configurable)        │
 │  4. See results: scores, times, rankings                    │
 │  5. Review wrong answers with explanations                  │
 └─────────────────────────────────────────────────────────────┘
@@ -26,17 +26,19 @@ A real-time multiplayer quiz where players race to answer questions correctly. E
 ## MVP Features
 
 ### 1. Room System
-- **Create Room:** Select grade (2-4) and term (1-4), get shareable code
+- **Create Room:** Select subject, grade, term, and configure settings
 - **Join Room:** Enter 6-character code + nickname
 - **Room Code:** Easy to share verbally (e.g., "ABC123")
-- **MVP Capacity:** 2 players per room
+- **Flexible Configuration:** Room creator can customize question count, time per question, and player limit
+- **Default Settings:** 10 questions, 10 seconds per question, 5 players max
 - **Future:** Expand to 10+ players (class challenges)
 
 ### 2. Speed Challenge Gameplay
 | Rule | Description |
 |------|-------------|
-| Questions | 10 per round, identical for all players |
-| Timer | 10 seconds per question |
+| Questions | Configurable count (default: 10), identical for all players |
+| Timer | Configurable per question (default: 10 seconds) |
+| Players | Configurable limit (default: 5 players) |
 | No answer | Treated as wrong (0 points), auto-advance |
 | Pacing | Independent - each player races at own speed |
 | End | When all players finish |
@@ -60,14 +62,31 @@ A real-time multiplayer quiz where players race to answer questions correctly. E
 
 ---
 
-## Content: Singapore Math
+## Content: Singapore MOE Curriculum
 
-### MVP Scope
-- **Grades:** 2, 3, 4
-- **Terms:** 1, 2, 3, 4 per grade
-- **Questions:** 150 minimum (50 per grade)
-- **Format:** Multiple choice (4 options), text-only
+### Platform Scope
+The Battle Board supports **all primary school subjects** aligned with the Singapore MOE curriculum:
+- **MVP:** Mathematics
+- **Future:** English, Chinese (Mother Tongue), Science
+
+### MVP Scope (Mathematics)
+- **Grades:** Primary 1-6
+- **Terms:** 4 terms per grade
+- **Questions:** 150 minimum
 - **Topics:** Heuristics, Problem Solving
+
+### Question Types
+| Type | Description | Status |
+|------|-------------|--------|
+| **Quiz** | Multiple choice with single correct answer | MVP |
+| **Free-form** | Open text input answer | MVP |
+| **Multiple Selection** | Multiple choice with multiple correct answers | Future |
+| **Multiple Free-form** | Multiple open text inputs | Future |
+
+### Question Media Support
+- **Text:** Supported (MVP)
+- **Images:** Supported (MVP)
+- **Video:** Supported (Future enhancement)
 
 ### Content Creation Workflow
 ```
@@ -81,7 +100,7 @@ AI Generation → Human Review → Database Import
 - Clear, unambiguous wording
 - Grade-appropriate difficulty
 - Explanation for every question (2-3 sentences)
-- No images for MVP (text-only)
+- Aligned with Singapore MOE syllabus
 
 ---
 
@@ -89,8 +108,9 @@ AI Generation → Human Review → Database Import
 
 ### Flow 1: Create Room
 ```
-Home → "Create Room" → Select Grade → Select Term →
-Show Room Code → Wait for Players → All Ready → Start Challenge
+Home → "Create Room" → Select Subject → Select Grade → Select Term →
+Configure Settings (optional) → Show Room Code → Wait for Players →
+All Ready → Start Challenge
 ```
 
 ### Flow 2: Join Room
@@ -101,8 +121,8 @@ Waiting Room → Ready Check → Start Challenge
 
 ### Flow 3: Speed Challenge
 ```
-Question 1 (10s timer) → Answer/Timeout →
-Question 2 → ... → Question 10 →
+Question 1 (timed) → Answer/Timeout →
+Question 2 → ... → Question N →
 Waiting for others → Results → Review Wrong Answers
 ```
 
@@ -115,25 +135,34 @@ Results Screen → "Review Mistakes" OR "Play Again" OR "New Room"
 
 ## Future Roadmap (Post-MVP)
 
-### Phase 2: Multi-Player Expansion
-- Support 3-10 players per room
+### Phase 2: Subject Expansion
+- English Language module (aligned with MOE syllabus)
+- Chinese (Mother Tongue) module
+- Science module
+
+### Phase 3: Advanced Question Types
+- Multiple selection questions
+- Multiple free-form inputs
+- Video-based questions
+- Interactive problem-solving
+
+### Phase 4: Multi-Player Expansion
+- Support 10+ players per room
 - Leaderboard rankings (1st, 2nd, 3rd...)
 - Class Challenge mode
+- Tournament brackets
 
-### Phase 3: Accounts & Progress
+### Phase 5: Accounts & Progress
 - User registration (email/phone)
 - Persistent stats and history
 - Achievement badges
+- Learning analytics
 
-### Phase 4: Content Expansion
-- Chinese language module
-- English language module
-- More grade levels (P1, P5, P6)
-
-### Phase 5: Social Features
+### Phase 6: Social Features
 - Friend lists
 - Challenge invitations
 - School/Class groups
+- Teacher dashboard
 
 ---
 
