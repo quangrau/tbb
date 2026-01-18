@@ -1,20 +1,21 @@
-import { memo, useMemo } from 'react'
-import type { Question } from '../types'
-import { OptionButton } from './OptionButton'
-import { TextAnswerInput } from './TextAnswerInput'
-import { MathText } from './MathText'
+import { memo, useMemo } from "react";
+import type { Question } from "../types";
+import { OptionButton } from "./OptionButton";
+import { TextAnswerInput } from "./TextAnswerInput";
+import { MathText } from "./MathText";
+import { Card } from "./ui/Card";
 
 interface QuestionCardProps {
-  question: Question
-  questionNumber: number
-  totalQuestions: number
-  selectedOption: number | null
-  submittedText: string | null
-  onSelectOption: (index: number) => void
-  onSubmitText: (answer: string) => void
-  disabled?: boolean
-  showResult?: boolean
-  isCorrect?: boolean | null
+  question: Question;
+  questionNumber: number;
+  totalQuestions: number;
+  selectedOption: number | null;
+  submittedText: string | null;
+  onSelectOption: (index: number) => void;
+  onSubmitText: (answer: string) => void;
+  disabled?: boolean;
+  showResult?: boolean;
+  isCorrect?: boolean | null;
 }
 
 export const QuestionCard = memo(function QuestionCard({
@@ -30,44 +31,45 @@ export const QuestionCard = memo(function QuestionCard({
   isCorrect = null,
 }: QuestionCardProps) {
   const options = useMemo(() => {
-    if (!question.options) return []
+    if (!question.options) return [];
 
     if (Array.isArray(question.options)) {
-      return question.options.filter((option): option is string => typeof option === 'string')
+      return question.options.filter(
+        (option): option is string => typeof option === "string",
+      );
     }
 
-    if (typeof question.options === 'string') {
+    if (typeof question.options === "string") {
       try {
-        const parsed: unknown = JSON.parse(question.options)
-        if (!Array.isArray(parsed)) return []
-        return parsed.filter((option): option is string => typeof option === 'string')
+        const parsed: unknown = JSON.parse(question.options);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter(
+          (option): option is string => typeof option === "string",
+        );
       } catch {
-        return []
+        return [];
       }
     }
 
-    return []
-  }, [question.options])
+    return [];
+  }, [question.options]);
 
-  const isFreeForm = question.question_type === 'free_form'
+  const isFreeForm = question.question_type === "free_form";
 
   return (
     <div className="space-y-6">
-      {/* Question number */}
       <div className="text-center">
-        <span className="text-white/60 text-sm">
+        <span className="inline-flex items-center bg-bb-surface border-3 border-bb-ink rounded-full px-4 py-2 text-bb-muted text-sm font-bold">
           Question {questionNumber} of {totalQuestions}
         </span>
       </div>
 
-      {/* Question text */}
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6">
-        <p className="text-2xl md:text-3xl font-bold text-white text-center">
+      <Card className="p-8">
+        <p className="text-2xl md:text-3xl font-display font-bold text-bb-ink text-center">
           <MathText text={question.question_text} />
         </p>
-      </div>
+      </Card>
 
-      {/* Answer input - Multiple choice or Free-form */}
       {isFreeForm ? (
         <TextAnswerInput
           unit={question.answer_unit}
@@ -87,12 +89,14 @@ export const QuestionCard = memo(function QuestionCard({
               onSelectOption={onSelectOption}
               disabled={disabled}
               selected={selectedOption === index}
-              isCorrect={showResult ? index === question.correct_option_index : null}
+              isCorrect={
+                showResult ? index === question.correct_option_index : null
+              }
               showResult={showResult}
             />
           ))}
         </div>
       )}
     </div>
-  )
-})
+  );
+});

@@ -22,23 +22,23 @@ export const ScoreBoard = memo(function ScoreBoard({
           <div
             key={player.id}
             className={`
-              flex items-center gap-3 px-4 py-2 rounded-xl
-              ${isCurrentPlayer ? "bg-yellow-400/20 border border-yellow-400/50" : "bg-white/10"}
+              flex items-center gap-3 px-4 py-2 rounded-bb-lg border-3 border-bb-ink
+              ${isCurrentPlayer ? "bg-bb-secondary" : "bg-bb-surface"}
             `}
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-8 h-8 rounded-full bg-bb-primary flex items-center justify-center text-white font-bold text-sm border-3 border-bb-ink">
               {player.nickname.charAt(0).toUpperCase()}
             </div>
-            <div className="text-white">
-              <p className="text-sm font-medium flex items-center gap-2">
+            <div className="text-bb-ink">
+              <p className="text-sm font-bold flex items-center gap-2">
                 {player.nickname}
                 {isPlayerOnline(player, effectiveNowMs) ? (
-                  <span className="w-2 h-2 rounded-full bg-green-400" />
+                  <span className="w-2 h-2 rounded-full bg-bb-primary" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-red-400" />
+                  <span className="w-2 h-2 rounded-full bg-bb-danger" />
                 )}
               </p>
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-bb-muted font-bold">
                 {player.current_question_index}/10 · {player.score} pts
               </p>
             </div>

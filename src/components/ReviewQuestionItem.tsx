@@ -40,11 +40,13 @@ function answerBadge(item: AnswerWithQuestion): {
   label: string;
   className: string;
 } {
-  if (isTimeout(item))
-    return { label: "No answer", className: "bg-white/10 text-white/60" };
-  if (item.answer.is_correct)
-    return { label: "Correct", className: "bg-green-500/20 text-green-100" };
-  return { label: "Wrong", className: "bg-red-500/20 text-red-100" };
+  if (isTimeout(item)) {
+    return { label: "No answer", className: "bg-bb-surface text-bb-muted" };
+  }
+  if (item.answer.is_correct) {
+    return { label: "Correct", className: "bg-bb-primary text-white" };
+  }
+  return { label: "Wrong", className: "bg-bb-danger text-white" };
 }
 
 function buildCorrectAnswerLabel(
@@ -122,43 +124,45 @@ export function ReviewQuestionItem({
   );
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 space-y-3">
+    <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-white font-semibold">
+          <p className="text-bb-ink font-bold">
             Q{questionNumber}
-            <span className="text-white/60 text-sm ml-2">
+            <span className="text-bb-muted text-sm ml-2 font-bold">
               (#{index + 1} in this filter)
             </span>
           </p>
         </div>
-        <div className={`px-2 py-1 rounded-lg text-xs ${badge.className}`}>
+        <div
+          className={`px-3 py-1 rounded-full text-xs font-bold ${badge.className}`}
+        >
           {badge.label}
         </div>
       </div>
 
-      <div className="bg-white/10 rounded-xl p-3">
-        <p className="text-white font-semibold">
+      <div className="bg-bb-secondary border-3 border-bb-ink rounded-bb-lg p-3">
+        <p className="text-bb-ink font-bold">
           <MathText text={item.question.question_text} />
         </p>
       </div>
 
       <div className="grid gap-1 text-sm">
-        <p className="text-white/80">
+        <p className="text-bb-muted font-bold">
           Your answer:{" "}
           {hasNoAnswer ? (
-            <span className="text-white/60">No answer</span>
+            <span className="text-bb-muted">No answer</span>
           ) : (
-            <span className="text-white">{yourAnswerLabel}</span>
+            <span className="text-bb-ink">{yourAnswerLabel}</span>
           )}
         </p>
-        <p className="text-white/80">
+        <p className="text-bb-muted font-bold">
           Correct answer:{" "}
-          <span className="text-white">{correctAnswerLabel}</span>
+          <span className="text-bb-ink">{correctAnswerLabel}</span>
         </p>
-        <p className="text-white/80">
+        <p className="text-bb-muted font-bold">
           Time:{" "}
-          <span className="text-white">
+          <span className="text-bb-ink">
             {formatTimeMs(item.answer.answer_time_ms)}
           </span>
         </p>
@@ -187,30 +191,28 @@ export function ReviewQuestionItem({
       </div>
 
       {isExplanationOpen && (
-        <div className="bg-white/10 rounded-xl p-3">
-          <p className="text-white/80 text-sm font-semibold mb-2">
-            Explanation
-          </p>
-          <p className="text-white/90 text-sm whitespace-pre-wrap">
+        <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3">
+          <p className="text-bb-muted text-sm font-bold mb-2">Explanation</p>
+          <p className="text-bb-ink text-sm font-bold whitespace-pre-wrap">
             {item.question.explanation}
           </p>
         </div>
       )}
-
       {!isReported && isReportOpen && (
-        <div className="bg-white/10 rounded-xl p-3 space-y-3">
-          {error && <p className="text-red-200 text-sm">{error}</p>}
+        <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 space-y-3">
+          {error && <p className="text-bb-danger text-sm font-bold">{error}</p>}
+
           <div className="grid gap-2">
-            <label className="text-white/80 text-sm font-medium">
+            <label className="text-bb-ink text-sm font-bold">
               What is wrong?
             </label>
             <select
-              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50 transition-all"
+              className="w-full px-4 py-3 bg-bb-surface border-3 border-bb-ink rounded-bb-lg text-bb-ink focus-visible:outline-none transition-colors"
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
             >
               {reportTypes.map((value) => (
-                <option key={value} value={value} className="text-black">
+                <option key={value} value={value}>
                   {value}
                 </option>
               ))}
@@ -218,11 +220,11 @@ export function ReviewQuestionItem({
           </div>
 
           <div className="grid gap-2">
-            <label className="text-white/80 text-sm font-medium">
+            <label className="text-bb-ink text-sm font-bold">
               Details (optional)
             </label>
             <textarea
-              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50 transition-all min-h-24"
+              className="w-full px-4 py-3 bg-bb-surface border-3 border-bb-ink rounded-bb-lg text-bb-ink placeholder:text-bb-muted focus-visible:outline-none transition-colors min-h-24"
               placeholder="Explain what you think is wrong..."
               value={reportText}
               onChange={(e) => setReportText(e.target.value)}

@@ -114,102 +114,106 @@ export default function ReviewPage() {
   if (!room || !currentPlayer) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white text-xl">Loading review...</p>
+        <p className="text-bb-muted text-xl font-bold">Loading review...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          Review
-        </h1>
-        <p className="text-white/70">Room {room.code}</p>
-      </div>
-
-      <Card className="w-full max-w-2xl space-y-4">
-        {error && (
-          <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 text-center">
-            <p className="text-red-200 text-sm">{error}</p>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-white/80 text-sm">
-            {isLoading ? "Loading..." : `${toReviewCount} to review`}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(ROUTES.results)}
-          >
-            Back to Results
-          </Button>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-2xl">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold font-display text-bb-ink mb-2">
+            Review
+          </h1>
+          <p className="text-bb-muted font-bold">Room {room.code}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          {[REVIEW_FILTER.ALL, REVIEW_FILTER.REVIEW].map((value) => (
+        <Card className="w-full space-y-4">
+          {error && (
+            <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+              <p className="text-bb-danger text-sm font-bold">{error}</p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-bb-muted text-sm font-bold">
+              {isLoading ? "Loading..." : `${toReviewCount} to review`}
+            </div>
             <Button
-              key={value}
-              variant={filter === value ? "primary" : "secondary"}
+              variant="outline"
               size="sm"
-              onClick={() => setFilter(value)}
+              onClick={() => navigate(ROUTES.results)}
             >
-              {filterLabel(value)}
+              Back to Results
             </Button>
-          ))}
-        </div>
-
-        {!isLoading && items.length > 0 && filteredItems.length === 0 && (
-          <div className="bg-white/10 rounded-xl p-4 text-center">
-            <p className="text-white/80">No questions in this filter.</p>
           </div>
-        )}
 
-        {!isLoading && items.length > 0 && toReviewCount === 0 && (
-          <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-4 text-center">
-            <p className="text-green-100 font-semibold">All correct!</p>
-            <p className="text-green-100/80 text-sm">
-              Great job — nothing to review this round.
-            </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[REVIEW_FILTER.ALL, REVIEW_FILTER.REVIEW].map((value) => (
+              <Button
+                key={value}
+                variant={filter === value ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => setFilter(value)}
+              >
+                {filterLabel(value)}
+              </Button>
+            ))}
           </div>
-        )}
 
-        <div className="space-y-3">
-          {filteredItems.map((item, index) => (
-            <ReviewQuestionItem
-              key={item.answer.id}
-              index={index}
-              item={item}
-              isReported={reportedAnswerIdSet.has(item.answer.id)}
-              onReport={async ({ reportType, reportText }: ReportPayload) => {
-                await submitQuestionReport({
-                  questionId: item.question.id,
-                  roomId: room.id,
-                  playerId: currentPlayer.id,
-                  reportType,
-                  reportText,
-                  selectedOptionIndex: item.answer.selected_option_index,
-                  answerText: item.answer.answer_text,
-                });
-                setReportedAnswerIdSet((previous) => {
-                  const next = new Set(previous);
-                  next.add(item.answer.id);
-                  return next;
-                });
-              }}
-              reportTypes={[
-                REPORT_TYPE.INCORRECT_ANSWER,
-                REPORT_TYPE.INCORRECT_EXPLANATION,
-                REPORT_TYPE.TYPO_FORMATTING,
-                REPORT_TYPE.AMBIGUOUS,
-                REPORT_TYPE.OTHER,
-              ]}
-            />
-          ))}
-        </div>
-      </Card>
+          {!isLoading && items.length > 0 && filteredItems.length === 0 && (
+            <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-4 text-center">
+              <p className="text-bb-muted font-bold">
+                No questions in this filter.
+              </p>
+            </div>
+          )}
+
+          {!isLoading && items.length > 0 && toReviewCount === 0 && (
+            <div className="bg-bb-primary border-3 border-bb-ink rounded-bb-lg p-4 text-center">
+              <p className="text-white font-bold">All correct!</p>
+              <p className="text-white text-sm font-bold opacity-90">
+                Great job — nothing to review this round.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {filteredItems.map((item, index) => (
+              <ReviewQuestionItem
+                key={item.answer.id}
+                index={index}
+                item={item}
+                isReported={reportedAnswerIdSet.has(item.answer.id)}
+                onReport={async ({ reportType, reportText }: ReportPayload) => {
+                  await submitQuestionReport({
+                    questionId: item.question.id,
+                    roomId: room.id,
+                    playerId: currentPlayer.id,
+                    reportType,
+                    reportText,
+                    selectedOptionIndex: item.answer.selected_option_index,
+                    answerText: item.answer.answer_text,
+                  });
+                  setReportedAnswerIdSet((previous) => {
+                    const next = new Set(previous);
+                    next.add(item.answer.id);
+                    return next;
+                  });
+                }}
+                reportTypes={[
+                  REPORT_TYPE.INCORRECT_ANSWER,
+                  REPORT_TYPE.INCORRECT_EXPLANATION,
+                  REPORT_TYPE.TYPO_FORMATTING,
+                  REPORT_TYPE.AMBIGUOUS,
+                  REPORT_TYPE.OTHER,
+                ]}
+              />
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

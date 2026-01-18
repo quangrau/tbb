@@ -95,66 +95,70 @@ export default function JoinRoomPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          Join Room
-        </h1>
-        <p className="text-white/70">Enter the room code from your friend</p>
-      </div>
-
-      <Card className="w-full max-w-md space-y-6">
-        <div>
-          <label className="block text-white/80 text-sm font-medium mb-2">
-            Room Code
-          </label>
-          <input
-            type="text"
-            value={code}
-            onChange={(e) => handleCodeChange(e.target.value)}
-            placeholder="XXXXXX"
-            maxLength={ROOM_CODE_LENGTH}
-            autoFocus
-            className="w-full px-4 py-4 bg-white/20 border border-white/30 rounded-xl text-white text-center text-2xl font-mono tracking-[0.3em] placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400/50 transition-all uppercase"
-          />
-        </div>
-
-        <Input
-          label="Your Nickname"
-          placeholder="Enter your name"
-          value={nickname}
-          onChange={(e) => {
-            setNickname(e.target.value);
-            setLastNickname(e.target.value);
-          }}
-          maxLength={NICKNAME_MAX_LENGTH}
-        />
-
-        {(localError || error) && (
-          <p className="text-red-300 text-sm text-center">
-            {localError || error}
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold font-display text-bb-ink mb-2">
+            Join Room
+          </h1>
+          <p className="text-bb-muted font-bold">
+            Enter the room code from your friend
           </p>
-        )}
-
-        <div className="space-y-3 pt-2">
-          <Button
-            fullWidth
-            size="lg"
-            onClick={handleJoin}
-            disabled={isLoading || code.length !== ROOM_CODE_LENGTH}
-          >
-            {isLoading ? "Joining..." : "Join Room"}
-          </Button>
-
-          <Button
-            fullWidth
-            variant="outline"
-            onClick={() => navigate(ROUTES.home)}
-          >
-            Back
-          </Button>
         </div>
-      </Card>
+
+        <Card className="w-full space-y-6">
+          <div>
+            <label className="block text-bb-ink text-sm font-bold mb-2">
+              Room Code
+            </label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => handleCodeChange(e.target.value)}
+              placeholder="XXXXXX"
+              maxLength={ROOM_CODE_LENGTH}
+              autoFocus
+              className="w-full px-4 py-4 bg-bb-surface border-3 border-bb-ink rounded-bb-lg text-bb-ink text-center text-2xl font-mono tracking-[0.3em] placeholder:text-bb-muted focus-visible:outline-none transition-colors uppercase"
+            />
+          </div>
+
+          <Input
+            label="Your Nickname"
+            placeholder="Enter your name"
+            value={nickname}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              setLastNickname(e.target.value);
+            }}
+            maxLength={NICKNAME_MAX_LENGTH}
+          />
+
+          {(localError || error) && (
+            <p className="text-bb-danger text-sm text-center font-bold">
+              {localError || error}
+            </p>
+          )}
+
+          <div className="space-y-3 pt-2">
+            <Button
+              fullWidth
+              size="lg"
+              onClick={handleJoin}
+              disabled={isLoading || code.length !== ROOM_CODE_LENGTH}
+            >
+              {isLoading ? "Joining..." : "Join Room"}
+            </Button>
+
+            <Button
+              fullWidth
+              variant="outline"
+              onClick={() => navigate(ROUTES.home)}
+            >
+              Back
+            </Button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

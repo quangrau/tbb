@@ -1,12 +1,20 @@
-import { memo, useState, useCallback, useRef, useEffect, KeyboardEvent } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  KeyboardEvent,
+} from "react";
+import { Button } from "./ui/Button";
 
 interface TextAnswerInputProps {
-  unit?: string | null
-  onSubmit: (answer: string) => void
-  disabled?: boolean
-  showResult?: boolean
-  isCorrect?: boolean | null
-  submittedAnswer?: string | null
+  unit?: string | null;
+  onSubmit: (answer: string) => void;
+  disabled?: boolean;
+  showResult?: boolean;
+  isCorrect?: boolean | null;
+  submittedAnswer?: string | null;
 }
 
 export const TextAnswerInput = memo(function TextAnswerInput({
@@ -17,93 +25,71 @@ export const TextAnswerInput = memo(function TextAnswerInput({
   isCorrect = null,
   submittedAnswer = null,
 }: TextAnswerInputProps) {
-  const [value, setValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input on mount
   useEffect(() => {
-    if (!disabled && inputRef.current) {
-      inputRef.current.focus()
+    if (!disabled && !showResult && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [disabled])
+  }, [disabled, showResult]);
 
   const handleSubmit = useCallback(() => {
-    const trimmed = value.trim()
-    if (trimmed && !disabled) {
-      onSubmit(trimmed)
+    const trimmed = value.trim();
+    if (trimmed && !disabled && !showResult) {
+      onSubmit(trimmed);
     }
-  }, [value, disabled, onSubmit])
+  }, [value, disabled, showResult, onSubmit]);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleSubmit()
-    }
-  }, [handleSubmit])
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit],
+  );
 
-  // Determine styles based on result state
-  let containerBorderColor = 'border-white/30'
-  let inputBgColor = 'bg-white/20'
-  let textColor = 'text-white'
+  const containerClasses = showResult
+    ? isCorrect
+      ? "bg-bb-primary text-white"
+      : "bg-bb-danger text-white"
+    : "bg-bb-surface text-bb-ink";
 
-  if (showResult) {
-    if (isCorrect === true) {
-      containerBorderColor = 'border-green-400'
-      inputBgColor = 'bg-green-500/30'
-      textColor = 'text-green-200'
-    } else if (isCorrect === false) {
-      containerBorderColor = 'border-red-400'
-      inputBgColor = 'bg-red-500/30'
-      textColor = 'text-red-200'
-    }
-  }
+  const inputValue =
+    showResult && submittedAnswer !== null ? submittedAnswer : value;
 
   return (
     <div className="space-y-3">
       <div
-        className={`
-          flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200
-          ${containerBorderColor} ${inputBgColor}
-        `}
+        className={`flex items-center gap-3 p-4 rounded-bb-xl border-3 border-bb-ink ${containerClasses}`}
       >
         <input
           ref={inputRef}
           type="text"
           inputMode="decimal"
-          value={showResult && submittedAnswer !== null ? submittedAnswer : value}
+          value={inputValue}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={disabled}
-          placeholder={unit ? `Enter answer in ${unit}` : 'Type your answer'}
-          className={`
-            flex-1 bg-transparent border-none outline-none text-xl font-medium
-            placeholder-white/50
-            ${textColor}
-            ${disabled ? 'cursor-not-allowed' : ''}
-          `}
+          disabled={disabled || showResult}
+          placeholder={unit ? `Enter answer in ${unit}` : "Type your answer"}
+          className="flex-1 bg-transparent border-none outline-none text-xl font-bold placeholder:text-bb-muted"
           autoComplete="off"
         />
-        {unit && (
-          <span className="text-white/60 text-lg font-medium">
-            {unit}
-          </span>
-        )}
+        {unit && <span className="text-lg font-bold opacity-80">{unit}</span>}
       </div>
 
       {!showResult && !disabled && (
-        <button
+        <Button
+          fullWidth
+          size="lg"
           onClick={handleSubmit}
           disabled={!value.trim()}
-          className={`
-            w-full py-4 rounded-xl font-bold text-lg transition-all duration-200
-            ${value.trim()
-              ? 'bg-yellow-400 text-purple-900 hover:bg-yellow-300 cursor-pointer'
-              : 'bg-white/20 text-white/50 cursor-not-allowed'}
-          `}
         >
           Submit Answer
-        </button>
+        </Button>
       )}
     </div>
-  )
-})
+  );
+});
