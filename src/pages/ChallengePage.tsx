@@ -241,7 +241,7 @@ export default function ChallengePage() {
     async (
       optionIndex: number | null,
       answerText: string | null,
-      source: "user" | "timeout" = "user"
+      source: "user" | "timeout" = "user",
     ) => {
       if (
         !room ||
@@ -388,30 +388,30 @@ export default function ChallengePage() {
     [handleSubmit, showResult],
   );
 
-  // Loading state
   if (!room || !currentPlayer || questions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white text-xl">Loading challenge...</p>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <p className="text-bb-muted text-xl font-bold">Loading challenge...</p>
       </div>
     );
   }
 
-  // Waiting for others state
   if (isWaitingForOthers) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
         <Card className="w-full max-w-md text-center space-y-6">
           {(statusMessage || offlineOtherPlayers.length > 0) && (
             <div className="space-y-2">
               {statusMessage && (
-                <div className="bg-white/10 border border-white/20 rounded-xl p-3 text-center">
-                  <p className="text-white text-sm">{statusMessage}</p>
+                <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+                  <p className="text-bb-ink text-sm font-bold">
+                    {statusMessage}
+                  </p>
                 </div>
               )}
               {offlineOtherPlayers.length > 0 && (
-                <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 text-center">
-                  <p className="text-red-200 text-sm">
+                <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+                  <p className="text-bb-danger text-sm font-bold">
                     Waiting for{" "}
                     {offlineOtherPlayers.map((p) => p.nickname).join(", ")} to
                     reconnect…
@@ -420,15 +420,18 @@ export default function ChallengePage() {
               )}
             </div>
           )}
-          <div className="w-16 h-16 mx-auto border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-          <h2 className="text-2xl font-bold text-white">Challenge Complete!</h2>
-          <p className="text-white/70">
+
+          <div className="w-16 h-16 mx-auto border-4 border-bb-ink border-t-transparent rounded-full animate-spin" />
+          <h2 className="text-2xl font-bold font-display text-bb-ink">
+            Challenge Complete!
+          </h2>
+          <p className="text-bb-muted font-bold">
             Your score:{" "}
-            <span className="text-yellow-400 font-bold">
+            <span className="text-bb-ink">
               {score}/{questions.length}
             </span>
           </p>
-          <p className="text-white/60">
+          <p className="text-bb-muted font-bold">
             Waiting for other players to finish...
           </p>
 
@@ -446,90 +449,90 @@ export default function ChallengePage() {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white text-xl">No questions available</p>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <p className="text-bb-muted text-xl font-bold">
+          No questions available
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-4">
-      {/* Header with timer and score */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-white">
-          <p className="text-sm text-white/60">Score</p>
-          <p className="text-2xl font-bold">
-            {score}/{currentQuestionIndex}
-          </p>
-        </div>
+    <div className="min-h-screen px-4 py-6">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="flex items-center justify-between mb-6 gap-4">
+          <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg px-4 py-3">
+            <p className="text-sm text-bb-muted font-bold">Score</p>
+            <p className="text-2xl font-bold font-display text-bb-ink">
+              {score}/{currentQuestionIndex}
+            </p>
+          </div>
 
-        <Timer
-          seconds={secondsLeft}
-          maxSeconds={DEFAULT_TIME_PER_QUESTION_SEC}
-        />
-
-        <div className="text-white text-right">
-          <p className="text-sm text-white/60">Question</p>
-          <p className="text-2xl font-bold">
-            {currentQuestionIndex + 1}/{questions.length}
-          </p>
-        </div>
-      </div>
-
-      {(statusMessage || offlineOtherPlayers.length > 0) && (
-        <div className="mb-4 space-y-2">
-          {statusMessage && (
-            <div className="bg-white/10 border border-white/20 rounded-xl p-3 text-center">
-              <p className="text-white text-sm">{statusMessage}</p>
-            </div>
-          )}
-          {offlineOtherPlayers.length > 0 && (
-            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 text-center">
-              <p className="text-red-200 text-sm">
-                Waiting for{" "}
-                {offlineOtherPlayers.map((p) => p.nickname).join(", ")} to
-                reconnect…
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Opponent progress */}
-      <div className="mb-6">
-        <ScoreBoard
-          players={players}
-          currentPlayerId={currentPlayer.id}
-          nowMs={nowMs}
-        />
-      </div>
-
-      {/* Question card */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-full max-w-2xl">
-          <QuestionCard
-            question={currentQuestion}
-            questionNumber={currentQuestionIndex + 1}
-            totalQuestions={questions.length}
-            selectedOption={selectedOption}
-            submittedText={submittedText}
-            onSelectOption={handleSelectOption}
-            onSubmitText={handleSubmitText}
-            disabled={showResult || isSubmitting}
-            showResult={showResult}
-            isCorrect={lastAnswerCorrect}
+          <Timer
+            seconds={secondsLeft}
+            maxSeconds={DEFAULT_TIME_PER_QUESTION_SEC}
           />
 
-          {/* Answer feedback */}
-          {showResult && (
-            <div
-              className={`mt-6 text-center text-2xl font-bold ${
-                lastAnswerCorrect ? "text-green-400" : "text-red-400"
-              }`}
-            >
-              {lastAnswerCorrect ? "Correct!" : "Wrong!"}
-            </div>
-          )}
+          <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg px-4 py-3 text-right">
+            <p className="text-sm text-bb-muted font-bold">Question</p>
+            <p className="text-2xl font-bold font-display text-bb-ink">
+              {currentQuestionIndex + 1}/{questions.length}
+            </p>
+          </div>
+        </div>
+
+        {(statusMessage || offlineOtherPlayers.length > 0) && (
+          <div className="mb-4 space-y-2">
+            {statusMessage && (
+              <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+                <p className="text-bb-ink text-sm font-bold">{statusMessage}</p>
+              </div>
+            )}
+            {offlineOtherPlayers.length > 0 && (
+              <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+                <p className="text-bb-danger text-sm font-bold">
+                  Waiting for{" "}
+                  {offlineOtherPlayers.map((p) => p.nickname).join(", ")} to
+                  reconnect…
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mb-6">
+          <ScoreBoard
+            players={players}
+            currentPlayerId={currentPlayer.id}
+            nowMs={nowMs}
+          />
+        </div>
+
+        <div className="flex items-center justify-center">
+          <div className="w-full max-w-2xl">
+            <QuestionCard
+              question={currentQuestion}
+              questionNumber={currentQuestionIndex + 1}
+              totalQuestions={questions.length}
+              selectedOption={selectedOption}
+              submittedText={submittedText}
+              onSelectOption={handleSelectOption}
+              onSubmitText={handleSubmitText}
+              disabled={showResult || isSubmitting}
+              showResult={showResult}
+              isCorrect={lastAnswerCorrect}
+            />
+
+            {showResult && (
+              <div
+                className={`mt-6 text-center text-2xl font-bold font-display ${
+                  lastAnswerCorrect ? "text-bb-primary" : "text-bb-danger"
+                }`}
+              >
+                {lastAnswerCorrect ? "Correct!" : "Wrong!"}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

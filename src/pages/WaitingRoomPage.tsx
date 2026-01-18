@@ -161,7 +161,7 @@ export default function WaitingRoomPage() {
   if (!room || !currentPlayer) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white">Loading...</p>
+        <p className="text-bb-muted font-bold">Loading...</p>
       </div>
     );
   }
@@ -170,89 +170,93 @@ export default function WaitingRoomPage() {
   const termLabel = TERM_LABEL_BY_VALUE[room.term] || `Term ${room.term}`;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          Waiting Room
-        </h1>
-        <p className="text-white/70">
-          {gradeLabel} - {termLabel}
-        </p>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold font-display text-bb-ink mb-2">
+            Waiting Room
+          </h1>
+          <p className="text-bb-muted font-bold">
+            {gradeLabel} • {termLabel}
+          </p>
+        </div>
 
-      {(statusMessage || offlineOtherPlayers.length > 0) && (
-        <div className="w-full max-w-md space-y-2 mb-4">
-          {statusMessage && (
-            <div className="bg-white/10 border border-white/20 rounded-xl p-3 text-center">
-              <p className="text-white text-sm">{statusMessage}</p>
-            </div>
-          )}
-          {offlineOtherPlayers.length > 0 && (
-            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 text-center">
-              <p className="text-red-200 text-sm">
-                Waiting for{" "}
-                {offlineOtherPlayers.map((p) => p.nickname).join(", ")} to
-                reconnect…
+        {(statusMessage || offlineOtherPlayers.length > 0) && (
+          <div className="w-full space-y-2 mb-4">
+            {statusMessage && (
+              <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+                <p className="text-bb-ink text-sm font-bold">{statusMessage}</p>
+              </div>
+            )}
+            {offlineOtherPlayers.length > 0 && (
+              <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-3 text-center">
+                <p className="text-bb-danger text-sm font-bold">
+                  Waiting for{" "}
+                  {offlineOtherPlayers.map((p) => p.nickname).join(", ")} to
+                  reconnect…
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <Card className="w-full space-y-6">
+          <RoomCodeDisplay code={room.code} />
+
+          <div className="pt-4">
+            <PlayerList
+              players={players}
+              currentPlayerId={currentPlayer.id}
+              maxPlayers={room.max_players}
+              nowMs={nowMs}
+            />
+          </div>
+
+          {players.length < MIN_PLAYERS_TO_START && (
+            <div className="bg-bb-secondary border-3 border-bb-ink rounded-bb-lg p-4 text-center">
+              <p className="text-bb-ink text-sm font-bold">
+                Waiting for at least {MIN_PLAYERS_TO_START} players to start.
               </p>
             </div>
           )}
-        </div>
-      )}
 
-      <Card className="w-full max-w-md space-y-6">
-        <RoomCodeDisplay code={room.code} />
+          {players.length >= MIN_PLAYERS_TO_START && !allPlayersReady && (
+            <div className="bg-bb-surface border-3 border-bb-ink rounded-bb-lg p-4 text-center">
+              <p className="text-bb-ink text-sm font-bold">
+                All joined players must be ready to start the challenge
+              </p>
+            </div>
+          )}
 
-        <div className="pt-4">
-          <PlayerList
-            players={players}
-            currentPlayerId={currentPlayer.id}
-            maxPlayers={room.max_players}
-            nowMs={nowMs}
-          />
-        </div>
-
-        {players.length < MIN_PLAYERS_TO_START && (
-          <div className="bg-blue-500/20 border border-blue-400/30 rounded-xl p-4 text-center">
-            <p className="text-blue-200 text-sm">
-              Waiting for at least {MIN_PLAYERS_TO_START} players to start.
-            </p>
-          </div>
-        )}
-
-        {players.length >= MIN_PLAYERS_TO_START && !allPlayersReady && (
-          <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-4 text-center">
-            <p className="text-yellow-200 text-sm">
-              All joined players must be ready to start the challenge
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-3 pt-2">
-          <Button
-            fullWidth
-            size="lg"
-            variant={currentPlayer.is_ready ? "secondary" : "primary"}
-            onClick={handleToggleReady}
-          >
-            {currentPlayer.is_ready ? "Cancel Ready" : "I'm Ready!"}
-          </Button>
-
-          {allPlayersReady && (
+          <div className="space-y-3 pt-2">
             <Button
               fullWidth
               size="lg"
-              onClick={handleStartGame}
-              disabled={!canStartGame}
+              variant={currentPlayer.is_ready ? "secondary" : "primary"}
+              onClick={handleToggleReady}
             >
-              {canStartGame ? "Start Challenge!" : "Waiting for host to start…"}
+              {currentPlayer.is_ready ? "Cancel Ready" : "I'm Ready!"}
             </Button>
-          )}
 
-          <Button fullWidth variant="outline" onClick={handleLeave}>
-            Leave Room
-          </Button>
-        </div>
-      </Card>
+            {allPlayersReady && (
+              <Button
+                fullWidth
+                size="lg"
+                onClick={handleStartGame}
+                disabled={!canStartGame}
+              >
+                {canStartGame
+                  ? "Start Challenge!"
+                  : "Waiting for host to start…"}
+              </Button>
+            )}
+
+            <Button fullWidth variant="outline" onClick={handleLeave}>
+              Leave Room
+            </Button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

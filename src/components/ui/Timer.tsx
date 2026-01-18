@@ -1,48 +1,57 @@
 interface TimerProps {
-  seconds: number
-  maxSeconds: number
+  seconds: number;
+  maxSeconds: number;
 }
 
 export function Timer({ seconds, maxSeconds }: TimerProps) {
-  const percentage = (seconds / maxSeconds) * 100
-  const isUrgent = seconds <= 3
+  const safeMaxSeconds = Math.max(1, maxSeconds);
+  const clampedSeconds = Math.max(0, Math.min(seconds, safeMaxSeconds));
+  const progress = clampedSeconds / safeMaxSeconds;
+  const isUrgent = seconds <= 3;
+  const size = 80;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - progress);
 
   return (
-    <div className="relative w-20 h-20">
-      {/* Background circle */}
-      <svg className="w-full h-full transform -rotate-90">
+    <div className="relative w-20 h-20 rounded-full bg-bb-surface border-3 border-bb-ink">
+      <svg
+        className="w-full h-full -rotate-90"
+        viewBox={`0 0 ${size} ${size}`}
+        aria-hidden="true"
+      >
         <circle
-          cx="40"
-          cy="40"
-          r="36"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.2)"
-          strokeWidth="8"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-bb-line"
         />
-        {/* Progress circle */}
         <circle
-          cx="40"
-          cy="40"
-          r="36"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
           fill="none"
-          stroke={isUrgent ? '#ef4444' : '#facc15'}
-          strokeWidth="8"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray={`${2 * Math.PI * 36}`}
-          strokeDashoffset={`${2 * Math.PI * 36 * (1 - percentage / 100)}`}
-          className="transition-all duration-1000 ease-linear"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          className={`transition-[stroke-dashoffset,stroke] duration-200 ease-linear ${isUrgent ? "text-bb-danger" : "text-bb-primary"}`}
         />
       </svg>
-      {/* Timer text */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span
           className={`text-2xl font-bold ${
-            isUrgent ? 'text-red-400 animate-pulse' : 'text-white'
+            isUrgent ? "text-bb-danger animate-pulse" : "text-bb-ink"
           }`}
         >
-          {seconds}
+          {clampedSeconds}
         </span>
       </div>
     </div>
-  )
+  );
 }

@@ -1,107 +1,101 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Room } from "../types";
 import {
-  clearActiveRoomId,
+  clearActiveRoom,
+  getActiveRoomCode,
   getActiveRoomExpiresAtMs,
   getActiveRoomId,
+  setActiveRoom,
+  setActiveRoomCode,
   setActiveRoomId,
 } from "./activeRoom";
+
+const ACTIVE_ROOM_ID_KEY = "bb_active_room_id";
+const ACTIVE_ROOM_CODE_KEY = "bb_active_room_code";
 
 describe("activeRoom", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    vi.setSystemTime(new Date("2024-01-01T00:00:00.000Z"));
+    localStorage.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    clearActiveRoomId();
+    localStorage.clear();
   });
 
-  it("stores and reads room id with expiry", () => {
-    const expiresAtMs = Date.parse("2026-01-01T00:10:00.000Z");
-    setActiveRoomId("room-1", expiresAtMs);
+  it("stores and reads active room id/code with expiry", () => {
+    const expiresAtMs = Date.now() + 10_000;
+    setActiveRoom({ id: "room-1", code: "ABCDEF" }, expiresAtMs);
 
     expect(getActiveRoomId()).toBe("room-1");
-
-    const raw = localStorage.getItem("bb_active_room_id");
-    expect(raw).not.toBeNull();
-    const parsed = JSON.parse(raw as string) as {
-      value: string;
-      expiresAtMs: number;
-    };
-    expect(parsed.value).toBe("room-1");
-    expect(parsed.expiresAtMs).toBe(expiresAtMs);
+    expect(getActiveRoomCode()).toBe("ABCDEF");
   });
 
-  it("migrates legacy raw localStorage strings to expiry schema", () => {
-    localStorage.setItem("bb_active_room_id", "legacy-room");
-    expect(getActiveRoomId()).toBe("legacy-room");
+  it("returns null after expiry and clears storage", () => {
+    const expiresAtMs = Date.now() + 1_000;
+    setActiveRoomId("room-2", expiresAtMs);
+    expect(getActiveRoomId()).toBe("room-2");
 
-    const raw = localStorage.getItem("bb_active_room_id");
-    expect(raw).not.toBeNull();
-    const parsed = JSON.parse(raw as string) as {
-      value: string;
-      expiresAtMs: number;
-    };
-    expect(parsed.value).toBe("legacy-room");
-    expect(typeof parsed.expiresAtMs).toBe("number");
-  });
-
-  it("clears expired entries", () => {
-    const raw = JSON.stringify({
-      value: "room-expired",
-      expiresAtMs: Date.now() - 1,
-    });
-    localStorage.setItem("bb_active_room_id", raw);
-
+    vi.setSystemTime(new Date(expiresAtMs + 1));
     expect(getActiveRoomId()).toBeNull();
-    expect(localStorage.getItem("bb_active_room_id")).toBeNull();
+    expect(localStorage.getItem(ACTIVE_ROOM_ID_KEY)).toBeNull();
   });
 
-  it("clears invalid expiry entries", () => {
-    localStorage.setItem(
-      "bb_active_room_id",
-      JSON.stringify({ value: "x", expiresAtMs: 0 }),
-    );
+  it("migrates legacy raw values into JSON format", () => {
+    localStorage.setItem(ACTIVE_ROOM_CODE_KEY, "ZZZZZZ");
+    const value = getActiveRoomCode();
+    expect(value).toBe("ZZZZZZ");
+
+    const stored = localStorage.getItem(ACTIVE_ROOM_CODE_KEY);
+    expect(stored).toMatch(/"value"\s*:\s*"ZZZZZZ"/);
+  });
+
+  it("clears active room keys", () => {
+    setActiveRoomId("room-3");
+    setActiveRoomCode("AAAAAA");
+    expect(getActiveRoomId()).toBe("room-3");
+    expect(getActiveRoomCode()).toBe("AAAAAA");
+
+    clearActiveRoom();
     expect(getActiveRoomId()).toBeNull();
-    expect(localStorage.getItem("bb_active_room_id")).toBeNull();
-  });
-});
-
-describe("getActiveRoomExpiresAtMs", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    expect(getActiveRoomCode()).toBeNull();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("derives expiry from started_at when available", () => {
+  it("computes expiresAt using started_at when present", () => {
+    const startedAt = "2024-01-01T00:00:10.000Z";
     const room = {
-      started_at: "2026-01-01T00:00:00.000Z",
-      expires_at: "2026-01-01T00:01:00.000Z",
       questions_count: 10,
-      time_per_question_sec: 10,
+      time_per_question_sec: 3,
+      started_at: startedAt,
+      expires_at: null,
     } as unknown as Room;
 
-    expect(getActiveRoomExpiresAtMs(room)).toBe(
-      Date.parse("2026-01-01T00:01:40.000Z"),
-    );
+    expect(getActiveRoomExpiresAtMs(room)).toBe(Date.parse(startedAt) + 30_000);
   });
 
-  it("falls back to expires_at when started_at is not set", () => {
+  it("falls back to expires_at when started_at is missing", () => {
+    const expiresAt = "2024-01-01T00:01:00.000Z";
     const room = {
+      questions_count: 10,
+      time_per_question_sec: 3,
       started_at: null,
-      expires_at: "2026-01-01T00:05:00.000Z",
-      questions_count: 10,
-      time_per_question_sec: 10,
+      expires_at: expiresAt,
     } as unknown as Room;
 
-    expect(getActiveRoomExpiresAtMs(room)).toBe(
-      Date.parse("2026-01-01T00:05:00.000Z"),
-    );
+    expect(getActiveRoomExpiresAtMs(room)).toBe(Date.parse(expiresAt));
+  });
+
+  it("falls back to now + duration when timestamps are missing", () => {
+    const now = Date.now();
+    const room = {
+      questions_count: 10,
+      time_per_question_sec: 3,
+      started_at: null,
+      expires_at: null,
+    } as unknown as Room;
+
+    expect(getActiveRoomExpiresAtMs(room)).toBe(now + 30_000);
   });
 });

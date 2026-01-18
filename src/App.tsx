@@ -1,28 +1,24 @@
-import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import CreateRoomPage from "./pages/CreateRoomPage";
+import JoinRoomPage from "./pages/JoinRoomPage";
+import WaitingRoomPage from "./pages/WaitingRoomPage";
+import ChallengePage from "./pages/ChallengePage";
+import ResultsPage from "./pages/ResultsPage";
+import ReviewPage from "./pages/ReviewPage";
 import { ROUTES } from "./utils/constants";
-
-const HomePage = lazy(() => import("./pages/HomePage"));
-const CreateRoomPage = lazy(() => import("./pages/CreateRoomPage"));
-const JoinRoomPage = lazy(() => import("./pages/JoinRoomPage"));
-const WaitingRoomPage = lazy(() => import("./pages/WaitingRoomPage"));
-const ChallengePage = lazy(() => import("./pages/ChallengePage"));
-const ResultsPage = lazy(() => import("./pages/ResultsPage"));
-const ReviewPage = lazy(() => import("./pages/ReviewPage"));
 
 function App() {
   return (
-    <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
-      <Routes>
-        <Route path={ROUTES.home} element={<HomePage />} />
-        <Route path={ROUTES.create} element={<CreateRoomPage />} />
-        <Route path={ROUTES.join} element={<JoinRoomPage />} />
-        <Route path={ROUTES.waiting} element={<WaitingRoomPage />} />
-        <Route path={ROUTES.challenge} element={<ChallengePage />} />
-        <Route path={ROUTES.results} element={<ResultsPage />} />
-        <Route path={ROUTES.review} element={<ReviewPage />} />
-      </Routes>
-    </Suspense>
+    <Routes>
+      <Route path={ROUTES.home} element={<HomePage />} />
+      <Route path={ROUTES.create} element={<CreateRoomPage />} />
+      <Route path={ROUTES.join} element={<JoinRoomPage />} />
+      <Route path={ROUTES.waiting} element={<WaitingRoomPage />} />
+      <Route path={ROUTES.challenge} element={<ChallengePage />} />
+      <Route path={ROUTES.results} element={<ResultsPage />} />
+      <Route path={ROUTES.review} element={<ReviewPage />} />
+    </Routes>
   );
 }
 
