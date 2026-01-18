@@ -1,0 +1,102 @@
+import { useEffect } from "react";
+import type { Player, Room } from "../types";
+import { useRoomStore } from "../stores/roomStore";
+import { ROOM_STATUS } from "../utils/constants";
+import ResultsPage from "./ResultsPage";
+
+function nowIso(offsetMs: number): string {
+  return new Date(Date.now() + offsetMs).toISOString();
+}
+
+function buildRoom(overrides: Partial<Room> = {}): Room {
+  return {
+    id: "sb-room-1",
+    code: "ABC123",
+    grade: 3,
+    term: 0,
+    max_players: 2,
+    questions_count: 10,
+    time_per_question_sec: 10,
+    question_ids: ["sb-q-1", "sb-q-2"],
+    status: ROOM_STATUS.FINISHED,
+    created_at: nowIso(-60_000),
+    started_at: nowIso(-50_000),
+    finished_at: nowIso(-5_000),
+    expires_at: nowIso(60_000),
+    ...overrides,
+  };
+}
+
+function buildPlayer(overrides: Partial<Player> = {}): Player {
+  return {
+    id: "sb-player-1",
+    room_id: "sb-room-1",
+    device_id: "sb-device-1",
+    nickname: "Host",
+    is_ready: true,
+    is_finished: true,
+    current_question_index: 10,
+    score: 8,
+    total_time_ms: 38000,
+    joined_at: nowIso(-60_000),
+    finished_at: nowIso(-5_000),
+    last_heartbeat: nowIso(0),
+    is_owner: true,
+    ...overrides,
+  };
+}
+
+function seed(room: Room, currentPlayer: Player) {
+  useRoomStore.setState((state) => ({
+    ...state,
+    room,
+    players: [currentPlayer],
+    currentPlayer,
+    isLoading: false,
+    error: null,
+  }));
+}
+
+export default {
+  title: "Screens/Results",
+  component: ResultsPage,
+};
+
+function DefaultStory() {
+  useEffect(() => {
+    const room = buildRoom();
+    seed(room, buildPlayer({ room_id: room.id }));
+  }, []);
+  return <ResultsPage />;
+}
+
+export const Default = {
+  render: () => <DefaultStory />,
+};
+
+function NonOwnerStory() {
+  useEffect(() => {
+    const room = buildRoom();
+    seed(
+      room,
+      buildPlayer({ room_id: room.id, is_owner: false, nickname: "Guest" }),
+    );
+  }, []);
+  return <ResultsPage />;
+}
+
+export const NonOwner = {
+  render: () => <NonOwnerStory />,
+};
+
+function ErrorStateStory() {
+  useEffect(() => {
+    const room = buildRoom({ id: "sb-room-results-error", code: "ERR000" });
+    seed(room, buildPlayer({ room_id: room.id }));
+  }, []);
+  return <ResultsPage />;
+}
+
+export const ErrorState = {
+  render: () => <ErrorStateStory />,
+};
